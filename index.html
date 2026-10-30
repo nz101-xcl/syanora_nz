@@ -1,0 +1,2038 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYANORA | Intelligent Tutoring System Numerasi SMA</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- Chart.js, SheetJS (XLSX), html2pdf.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="role-student">
+
+  <!-- ==================== 0. LAYAR PERINGATAN SINYAL / KONEKSI TIDAK STABIL ==================== -->
+  <div id="network-alert-overlay" class="network-fullscreen-overlay" hidden>
+    <div class="network-alert-card">
+      <div class="network-icon-pulse"><i class="fa-solid fa-wifi"></i></div>
+      <span class="badge-pill badge-amber">Deteksi Koneksi Jaringan</span>
+      <h2>Sinyal Internet Sedang Tidak Stabil / Terputus</h2>
+      <p class="text-muted">
+        Jangan khawatir! Seluruh jawaban, hitungan, dan progres belajarmu di <strong>SYANORA</strong> telah <strong>tersimpan otomatis</strong> di perangkat ini dan tidak akan hilang.
+      </p>
+      <div class="network-status-detail" id="network-detail-text">
+        Status: Mode Penyimpanan Lokal Aktif (Auto-Save Berjalan)
+      </div>
+      <div class="btn-grid-horizontal" style="justify-content:center; margin-top:16px;">
+        <button type="button" id="retry-network-btn" class="btn btn-primary">
+          <i class="fa-solid fa-rotate"></i> Periksa Ulang Sinyal
+        </button>
+        <button type="button" id="continue-offline-btn" class="btn btn-outline">
+          <i class="fa-solid fa-shield-check"></i> Tetap Lanjutkan Belajar
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 1. HALAMAN LOGIN FULLSCREEN (BERSIH TANPA TOMBOL PANDUAN) ==================== -->
+  <div id="auth-modal" class="auth-fullscreen-backdrop active" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+    <div class="auth-center-card">
+      <div class="auth-brand-top">
+        <div class="auth-logo-square">S</div>
+        <h1 id="auth-title">SYANORA</h1>
+      </div>
+
+      <form id="login-form" autocomplete="off">
+        <div class="auth-field">
+          <label for="login-username"><i class="fa-solid fa-user"></i> Username</label>
+          <input type="text" id="login-username" name="syanora_user_field" autocomplete="off" placeholder="Masukkan username kamu" required />
+        </div>
+
+        <div class="auth-field">
+          <label for="login-pin"><i class="fa-solid fa-lock"></i> PIN Akses</label>
+          <div class="auth-pin-wrap">
+            <input type="password" id="login-pin" name="syanora_pin_field" autocomplete="new-password" placeholder="Masukkan PIN Akses" required />
+            <button type="button" id="toggle-pin-btn" class="auth-eye-btn" title="Lihat/Sembunyikan PIN">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div id="login-error-box" class="alert-error" hidden></div>
+
+        <button type="submit" id="login-submit-btn" class="btn btn-primary btn-block btn-lg" style="margin-top:14px;">
+          <i class="fa-solid fa-right-to-bracket"></i> Login
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== 2. MODAL PANDUAN BELAJAR SINGKAT ==================== -->
+  <div id="guide-modal" class="modal-backdrop" hidden>
+    <div class="modal-card guide-card">
+      <div class="modal-top">
+        <div>
+          <span class="badge-pill"><i class="fa-solid fa-compass"></i> Panduan Cepat</span>
+          <h2>5 Langkah Belajar di SYANORA</h2>
+        </div>
+        <button type="button" id="close-guide-btn" class="icon-btn" aria-label="Tutup panduan">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="guide-steps-compact">
+        <div class="guide-item-compact">
+          <span class="guide-num">1</span>
+          <div>
+            <strong>Materi &amp; Unduh Modul PDF</strong>
+            <p>Pelajari 4 konsep (<span class="math-eq">U<sub>n</sub>, U<sub>t</sub>, S<sub>n</sub></span>) dan simulator grafik, lalu unduh PDF materi.</p>
+          </div>
+        </div>
+        <div class="guide-item-compact">
+          <span class="guide-num">2</span>
+          <div>
+            <strong>Tantangan Pola</strong>
+            <p>Selesaikan 4 level tantangan secara berurutan untuk membuka menu Ayo Berlatih.</p>
+          </div>
+        </div>
+        <div class="guide-item-compact">
+          <span class="guide-num">3</span>
+          <div>
+            <strong>Ayo Berlatih (Fokus Per Langkah)</strong>
+            <p>Jawab satu langkah per tampilan. Jika ada langkah yang keliru, latihan soal setipe akan membantumu sampai paham sebelum lanjut ke langkah berikutnya.</p>
+          </div>
+        </div>
+        <div class="guide-item-compact">
+          <span class="guide-num">4</span>
+          <div>
+            <strong>Studi Kasus</strong>
+            <p>Selesaikan 3 studi kasus satu per satu dengan format nominal uang otomatis.</p>
+          </div>
+        </div>
+        <div class="guide-item-compact">
+          <span class="guide-num">5</span>
+          <div>
+            <strong>Diskusi, Pesan &amp; Unduh Rapor</strong>
+            <p>Kirim kesimpulan di forum atau pesan langsung, lalu klik <strong>Unduh Hasilku</strong> (PDF / Excel).</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" id="start-from-guide-btn" class="btn btn-primary btn-block">
+          <i class="fa-solid fa-check"></i> Mengerti
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 3. MODAL LATIHAN PENGUATAN KONSEP (BAHASA PENDIDIKAN TANPA KATA BENGKEL) ==================== -->
+  <div id="workshop-modal" class="modal-backdrop" hidden>
+    <div class="modal-card workshop-modal-card">
+      <div class="workshop-modal-header">
+        <div class="workshop-badge-icon"><i class="fa-solid fa-graduation-cap"></i></div>
+        <div>
+          <span class="badge-pill badge-amber" id="ws-modal-step-badge">LATIHAN PENGUATAN KONSEP</span>
+          <h2 id="ws-modal-title">Latihan Pemahaman Soal Setipe</h2>
+          <p id="ws-modal-subtitle" class="text-muted">Mari berlatih soal setipe yang lebih sederhana pada langkah ini agar pemahamanmu semakin mantap!</p>
+        </div>
+      </div>
+
+      <div class="workshop-diagnostic-box" id="ws-diagnostic-reason"></div>
+
+      <div class="workshop-drill-card">
+        <div class="ws-drill-label"><i class="fa-solid fa-lightbulb"></i> Soal Latihan Setipe:</div>
+        <div id="ws-drill-story" class="ws-drill-story"></div>
+        <div id="ws-drill-question" class="ws-drill-question"></div>
+
+        <div id="ws-input-numeric-wrap" class="ws-input-wrap">
+          <div class="currency-input-wrap ws-formatted-box">
+            <span class="currency-prefix" id="ws-prefix-rp" hidden><i class="fa-solid fa-money-bill-wave"></i> Rp</span>
+            <input type="text" id="ws-drill-input" class="ws-input" placeholder="Ketik jawaban lalu tekan Enter..." />
+            <span class="unit-suffix-badge" id="ws-suffix-unit" hidden>kursi</span>
+          </div>
+        </div>
+
+        <div id="ws-input-choice-wrap" class="ws-choice-grid" hidden>
+          <button type="button" class="ws-choice-btn" data-ws-choice="un">
+            <strong>Rumus Suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>)</strong>
+            <span>Mencari nilai pada satu urutan tertentu saja</span>
+          </button>
+          <button type="button" class="ws-choice-btn" data-ws-choice="sn">
+            <strong>Rumus Jumlah Deret (<span class="math-eq">S<sub>n</sub></span>)</strong>
+            <span>Mencari total akumulasi gabungan dari awal</span>
+          </button>
+        </div>
+
+        <div id="ws-drill-hint" class="ws-drill-hint"></div>
+        <div id="ws-mistake-history" class="mistake-note-box" hidden></div>
+        <div id="ws-drill-feedback" class="ws-drill-feedback" hidden></div>
+      </div>
+
+      <div class="workshop-modal-footer">
+        <button type="button" id="ws-ask-zeta-btn" class="btn btn-outline">
+          <i class="fa-solid fa-robot"></i> ZETA AI
+        </button>
+        <div class="ws-footer-right">
+          <button type="button" id="ws-check-btn" class="btn btn-primary">
+            <i class="fa-solid fa-check-double"></i> Periksa Jawaban (Enter)
+          </button>
+          <button type="button" id="ws-return-main-btn" class="btn btn-emerald" hidden>
+            <i class="fa-solid fa-arrow-right"></i> Paham! Lanjutkan Langkah Ini
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 4. MODAL ALAT BANTU: KALKULATOR, RUMUS SINGKAT & CORETAN IPAD PEN ==================== -->
+  <div id="Utility-modal" class="modal-backdrop" hidden>
+    <div class="modal-card util-card">
+      <div class="modal-top">
+        <h2 id="util-modal-title"><i class="fa-solid fa-calculator text-indigo"></i> Alat Bantu Hitung &amp; Coretan Pena</h2>
+        <button type="button" id="close-util-btn" class="icon-btn" aria-label="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="util-tabs">
+        <button type="button" class="util-tab active" data-util="calc"><i class="fa-solid fa-calculator"></i> Kalkulator</button>
+        <button type="button" class="util-tab" data-util="formula"><i class="fa-solid fa-square-root-variable"></i> Rumus Cepat</button>
+        <button type="button" class="util-tab" data-util="notes"><i class="fa-solid fa-pen-nib"></i> Coretan Pena &amp; Ketik</button>
+      </div>
+
+      <!-- TAB 1: KALKULATOR -->
+      <div id="util-pane-calc" class="util-pane active">
+        <input type="text" id="calc-display" class="calc-screen" readonly value="0" />
+        <div class="calc-keypad">
+          <button type="button" data-calc="C" class="calc-key key-danger">C</button>
+          <button type="button" data-calc="(" class="calc-key">(</button>
+          <button type="button" data-calc=")" class="calc-key">)</button>
+          <button type="button" data-calc="/" class="calc-key key-op">÷</button>
+          <button type="button" data-calc="7" class="calc-key">7</button>
+          <button type="button" data-calc="8" class="calc-key">8</button>
+          <button type="button" data-calc="9" class="calc-key">9</button>
+          <button type="button" data-calc="*" class="calc-key key-op">×</button>
+          <button type="button" data-calc="4" class="calc-key">4</button>
+          <button type="button" data-calc="5" class="calc-key">5</button>
+          <button type="button" data-calc="6" class="calc-key">6</button>
+          <button type="button" data-calc="-" class="calc-key key-op">−</button>
+          <button type="button" data-calc="1" class="calc-key">1</button>
+          <button type="button" data-calc="2" class="calc-key">2</button>
+          <button type="button" data-calc="3" class="calc-key">3</button>
+          <button type="button" data-calc="+" class="calc-key key-op">+</button>
+          <button type="button" data-calc="0" class="calc-key key-zero">0</button>
+          <button type="button" data-calc="." class="calc-key">.</button>
+          <button type="button" data-calc="=" class="calc-key key-equal">=</button>
+        </div>
+      </div>
+
+      <!-- TAB 2: RUMUS CEPAT (PADAT, SINGKAT & TIDAK BERTELE-TELE) -->
+      <div id="util-pane-formula" class="util-pane" hidden>
+        <div class="formula-cards-grid">
+          <div class="formula-pretty-card">
+            <div class="fp-header">
+              <span class="fp-badge fp-indigo">1. Suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>)</span>
+            </div>
+            <div class="fp-equation math-eq">U<sub>n</sub> = a + (n − 1)b</div>
+            <p class="fp-note">Mencari nilai pada urutan ke-<em>n</em> saja.</p>
+          </div>
+
+          <div class="formula-pretty-card">
+            <div class="fp-header">
+              <span class="fp-badge fp-emerald">2. Beda Tetap (<em>b</em>)</span>
+            </div>
+            <div class="fp-equation math-eq">b = U<sub>2</sub> − U<sub>1</sub> = <span class="mfrac"><span class="mnum">U<sub>p</sub> − U<sub>q</sub></span><span class="mden">p − q</span></span></div>
+            <p class="fp-note">Selisih tetap antar suku berurutan.</p>
+          </div>
+
+          <div class="formula-pretty-card">
+            <div class="fp-header">
+              <span class="fp-badge fp-amber">3. Jumlah Deret (<span class="math-eq">S<sub>n</sub></span>)</span>
+            </div>
+            <div class="fp-equation math-eq">S<sub>n</sub> = <span class="mfrac"><span class="mnum">n</span><span class="mden">2</span></span> (2a + (n − 1)b) = <span class="mfrac"><span class="mnum">n</span><span class="mden">2</span></span> (a + U<sub>n</sub>)</div>
+            <p class="fp-note">Total akumulasi dari suku ke-1 s.d. ke-<em>n</em>.</p>
+          </div>
+
+          <div class="formula-pretty-card">
+            <div class="fp-header">
+              <span class="fp-badge fp-purple">4. Suku Tengah &amp; Sisipan</span>
+            </div>
+            <div class="fp-equation math-eq">U<sub>t</sub> = <span class="mfrac"><span class="mnum">a + U<sub>n</sub></span><span class="mden">2</span></span> &nbsp;|&nbsp; b' = <span class="mfrac"><span class="mnum">b</span><span class="mden">k + 1</span></span></div>
+            <p class="fp-note">Nilai tengah (<em>n</em> ganjil) &amp; beda baru <em>k</em> sisipan.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: CATATAN CORETAN (DUKUNGAN IPAD PEN / STYLUS CANVAS + KETIK) -->
+      <div id="util-pane-notes" class="util-pane" hidden>
+        <div class="notes-mode-switch">
+          <button type="button" class="notes-mode-btn active" data-nmode="draw">
+            <i class="fa-solid fa-pen-fancy"></i> Mode Pena / iPad Stylus (Gambar Coretan)
+          </button>
+          <button type="button" class="notes-mode-btn" data-nmode="type">
+            <i class="fa-solid fa-keyboard"></i> Mode Ketik Teks
+          </button>
+        </div>
+
+        <!-- Kanvas Gambar Coretan (Mendukung Apple Pencil / Touch / Mouse) -->
+        <div id="notes-draw-container" class="stylus-canvas-wrap">
+          <div class="stylus-toolbar">
+            <div class="stylus-colors">
+              <button type="button" class="color-dot active" data-color="#0f172a" style="background:#0f172a" title="Pena Hitam"></button>
+              <button type="button" class="color-dot" data-color="#4f46e5" style="background:#4f46e5" title="Pena Biru Indigo"></button>
+              <button type="button" class="color-dot" data-color="#dc2626" style="background:#dc2626" title="Pena Merah"></button>
+              <button type="button" class="color-dot" data-color="#059669" style="background:#059669" title="Pena Hijau"></button>
+            </div>
+            <div class="stylus-tools">
+              <label for="pen-size-range" style="font-size:0.75rem;font-weight:700;">Tebal:</label>
+              <input type="range" id="pen-size-range" min="1" max="10" value="3" style="width:70px;" />
+              <button type="button" id="pen-eraser-btn" class="btn btn-outline btn-xs">
+                <i class="fa-solid fa-eraser"></i> Penghapus
+              </button>
+              <button type="button" id="clear-canvas-btn" class="btn btn-danger-soft btn-xs">
+                <i class="fa-solid fa-trash-can"></i> Bersihkan
+              </button>
+              <button type="button" id="download-canvas-btn" class="btn btn-emerald btn-xs" title="Simpan Coretan sebagai Gambar">
+                <i class="fa-solid fa-download"></i> Simpan PNG
+              </button>
+            </div>
+          </div>
+          <canvas id="scratchpad-canvas" width="580" height="270" class="scratchpad-canvas"></canvas>
+          <div class="notebook-footer">
+            <span><i class="fa-solid fa-pen-nib text-indigo"></i> Mendukung Apple Pencil / Stylus, layar sentuh, &amp; mouse (tersimpan otomatis)</span>
+          </div>
+        </div>
+
+        <!-- Buku Catatan Ketik -->
+        <div id="notes-type-container" class="notebook-wrapper" hidden>
+          <div class="notebook-toolbar">
+            <div class="notebook-symbols">
+              <span>Sisipkan:</span>
+              <button type="button" class="sym-btn" data-sym="a = ">a =</button>
+              <button type="button" class="sym-btn" data-sym="b = ">b =</button>
+              <button type="button" class="sym-btn" data-sym="n = ">n =</button>
+              <button type="button" class="sym-btn" data-sym="Un = a + (n - 1)b">Rumus Un</button>
+              <button type="button" class="sym-btn" data-sym="Sn = (n/2) × (2a + (n - 1)b)">Rumus Sn</button>
+            </div>
+            <button type="button" id="clear-scratchpad-btn" class="btn btn-danger-soft btn-xs">
+              <i class="fa-solid fa-trash-can"></i> Hapus Teks
+            </button>
+          </div>
+          <textarea id="scratchpad-area" class="notebook-textarea" rows="7" placeholder="Ketik catatan hitunganmu di sini..."></textarea>
+          <div class="notebook-footer">
+            <span><i class="fa-solid fa-cloud-check text-emerald"></i> Tersimpan otomatis</span>
+            <span id="scratchpad-char-count">0 karakter</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 5. MODAL DIRECT MESSAGE (PESAN LANGSUNG ANTAR USER / KE PENELITI) ==================== -->
+  <div id="dm-modal" class="modal-backdrop" hidden>
+    <div class="modal-card dm-modal-card">
+      <div class="modal-top">
+        <div>
+          <span class="badge-pill"><i class="fa-solid fa-envelope-open-text"></i> Komunikasi Terpadu</span>
+          <h2>Pesan Langsung (Direct Message)</h2>
+        </div>
+        <button type="button" id="close-dm-btn" class="icon-btn" aria-label="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-muted" style="margin-bottom:12px;">
+        Kirim saran, pertanyaan pribadi, atau masukan langsung ke <strong>Peneliti Utama (musyhapmiwa)</strong>, <strong>Pendidik/Validator</strong>, atau pengguna lainnya.
+      </p>
+
+      <form id="dm-send-form" class="dm-form-box">
+        <div class="dual-input-row" style="margin-bottom:10px;">
+          <div>
+            <label for="dm-recipient-select">Kirim Kepada (Username Tujuan)</label>
+            <select id="dm-recipient-select" required></select>
+          </div>
+          <div>
+            <label for="dm-subject-input">Subjek / Kategori Pesan</label>
+            <select id="dm-subject-input">
+              <option value="Saran & Masukan Sistem">Saran &amp; Masukan Sistem</option>
+              <option value="Pertanyaan Materi / Soal">Pertanyaan Materi / Soal</option>
+              <option value="Catatan Validasi Instrumen">Catatan Validasi Instrumen</option>
+              <option value="Pesan Umum">Pesan Umum</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <textarea id="dm-body-input" rows="3" placeholder="Ketik isi pesan atau masukan Anda di sini..." required></textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">
+          <i class="fa-solid fa-paper-plane"></i> Kirim Pesan Langsung
+        </button>
+      </form>
+
+      <h4 style="margin: 14px 0 8px;">Kotak Masuk &amp; Riwayat Pesan Anda</h4>
+      <div id="dm-messages-list" class="dm-messages-list"></div>
+    </div>
+  </div>
+
+  <!-- ==================== 6. MODAL UNDUH HASIL PENGERJAAN ==================== -->
+  <div id="download-modal" class="modal-backdrop" hidden>
+    <div class="modal-card download-card">
+      <div class="modal-top">
+        <div>
+          <span class="badge-pill">Portofolio Hasil Belajar</span>
+          <h2>Unduh Hasil Pengerjaan</h2>
+        </div>
+        <button type="button" id="close-download-btn" class="icon-btn" aria-label="Tutup">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <p class="text-muted">Pilih format laporan hasil belajar, jawaban latihan, studi kasus, dan capaian indikator numerasi:</p>
+      <div class="download-actions-grid">
+        <button type="button" id="export-student-pdf-btn" class="download-option-btn">
+          <i class="fa-solid fa-file-pdf"></i>
+          <strong>Unduh Rapor PDF (.pdf)</strong>
+          <span>Rapor visual berisi identitas, karakteristik, skor numerasi, dan capaian</span>
+        </button>
+        <button type="button" id="export-student-xlsx-btn" class="download-option-btn">
+          <i class="fa-solid fa-file-excel"></i>
+          <strong>Unduh Lembar Kerja Excel (.xlsx)</strong>
+          <span>Tabel rincian pengerjaan materi, latihan, studi kasus, dan riwayat aktivitas</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== 7. HEADER & NAVBAR INTERAKTIF (LOGO CUKUP SYANORA) ==================== -->
+  <header class="top-navbar">
+    <div class="nav-left">
+      <button type="button" id="mobile-menu-trigger" class="icon-btn mobile-only" aria-label="Buka Menu">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <div class="brand-box" id="brand-home-trigger" role="button" tabindex="0">
+        <div class="brand-icon">S</div>
+        <div class="brand-text">
+          <span class="brand-name">SYANORA</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav-center" aria-label="Menu Utama">
+      <button type="button" class="nav-link active" data-target="page-home" title="Beranda">
+        <i class="fa-solid fa-house"></i>
+        <span>Beranda</span>
+      </button>
+      <button type="button" class="nav-link" data-target="page-materi" title="Tahap 1: Materi & Visual">
+        <i class="fa-solid fa-book-open"></i>
+        <span>Materi</span>
+        <small class="stage-status-icon" id="nav-status-materi"><i class="fa-solid fa-lock-open"></i></small>
+      </button>
+      <button type="button" class="nav-link" data-target="page-game" title="Tahap 2: Tantangan Pola">
+        <i class="fa-solid fa-gamepad"></i>
+        <span>Tantangan</span>
+        <small class="stage-status-icon" id="nav-status-game"><i class="fa-solid fa-lock"></i></small>
+      </button>
+      <button type="button" class="nav-link" data-target="page-latihan" title="Tahap 3: Ayo Berlatih">
+        <i class="fa-solid fa-pen-to-square"></i>
+        <span>Berlatih</span>
+        <small class="stage-status-icon" id="nav-status-latihan"><i class="fa-solid fa-lock"></i></small>
+      </button>
+      <button type="button" class="nav-link" data-target="page-kasus" title="Tahap 4: Studi Kasus">
+        <i class="fa-solid fa-briefcase"></i>
+        <span>Kasus</span>
+        <small class="stage-status-icon" id="nav-status-kasus"><i class="fa-solid fa-lock"></i></small>
+      </button>
+      <button type="button" class="nav-link" data-target="page-diskusi" title="Tahap 5: Forum Diskusi">
+        <i class="fa-solid fa-comments"></i>
+        <span>Diskusi</span>
+        <small class="stage-status-icon" id="nav-status-diskusi"><i class="fa-solid fa-lock"></i></small>
+      </button>
+      <!-- Menu Profil HANYA untuk Siswa (Disembunyikan pada Pendidik & Peneliti sesuai revisi) -->
+      <button type="button" id="nav-profil-btn" class="nav-link student-only-nav" data-target="page-profil" title="Profil & Rapor Siswa">
+        <i class="fa-solid fa-user"></i>
+        <span>Profil</span>
+      </button>
+      <button type="button" id="nav-staff-btn" class="nav-link nav-staff-only" data-target="page-staff" title="Panel Pendidik & Peneliti" hidden>
+        <i class="fa-solid fa-microscope"></i>
+        <span>Panel Riset &amp; CT</span>
+      </button>
+    </nav>
+
+    <div class="nav-right">
+      <button type="button" id="open-dm-btn" class="icon-btn dm-trigger-btn" title="Pesan Langsung (Direct Message)">
+        <i class="fa-solid fa-envelope"></i>
+        <span id="dm-unread-badge" class="dm-badge-dot" hidden>0</span>
+      </button>
+      <button type="button" id="open-formula-btn" class="icon-btn" title="Rumus Cepat">
+        <i class="fa-solid fa-square-root-variable"></i>
+      </button>
+      <button type="button" id="open-calc-btn" class="icon-btn" title="Kalkulator & Coretan Pena iPad">
+        <i class="fa-solid fa-pen-nib"></i>
+      </button>
+      <button type="button" id="music-toggle-btn" class="icon-btn" title="Putar / Matikan Musik Instrumen Belajar">
+        <i class="fa-solid fa-music"></i>
+      </button>
+      <button type="button" id="sound-toggle-btn" class="icon-btn" title="Efek Suara Aktif">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+      <button type="button" id="logout-btn" class="icon-btn btn-logout-icon" title="Keluar & Simpan Otomatis">
+        <i class="fa-solid fa-power-off"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ==================== 8. SIDEBAR DRAWER ==================== -->
+  <div id="sidebar-overlay" class="sidebar-overlay" hidden></div>
+  <aside id="mobile-sidebar" class="mobile-sidebar" aria-label="Navigasi Samping">
+    <div class="sidebar-top">
+      <div class="brand-box">
+        <div class="brand-icon">S</div>
+        <div>
+          <strong>SYANORA</strong>
+          <small id="sidebar-role-text">Mode Siswa</small>
+        </div>
+      </div>
+      <button type="button" id="close-sidebar-btn" class="icon-btn" aria-label="Tutup Menu">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+
+    <div class="sidebar-user-summary">
+      <div class="avatar-circle" id="sidebar-avatar">S</div>
+      <div>
+        <strong id="sidebar-username">Siswa</strong>
+        <span id="sidebar-school" class="text-muted">SMA IT Harapan Mulia Palembang</span>
+      </div>
+    </div>
+
+    <div class="sidebar-nav-list">
+      <button type="button" class="sidebar-item active" data-target="page-home"><i class="fa-solid fa-house"></i> Beranda</button>
+      <button type="button" class="sidebar-item" data-target="page-materi"><i class="fa-solid fa-book-open"></i> 1. Materi &amp; Visual</button>
+      <button type="button" class="sidebar-item" data-target="page-game"><i class="fa-solid fa-gamepad"></i> 2. Tantangan Pola</button>
+      <button type="button" class="sidebar-item" data-target="page-latihan"><i class="fa-solid fa-pen-to-square"></i> 3. Ayo Berlatih</button>
+      <button type="button" class="sidebar-item" data-target="page-kasus"><i class="fa-solid fa-briefcase"></i> 4. Studi Kasus</button>
+      <button type="button" class="sidebar-item" data-target="page-diskusi"><i class="fa-solid fa-comments"></i> 5. Forum Diskusi</button>
+      <button type="button" id="sidebar-profil-btn" class="sidebar-item student-only-nav" data-target="page-profil"><i class="fa-solid fa-user"></i> Profil &amp; Rapor</button>
+      <button type="button" id="sidebar-staff-btn" class="sidebar-item nav-staff-only" data-target="page-staff" hidden>
+        <i class="fa-solid fa-microscope"></i> Panel Riset &amp; CT
+      </button>
+    </div>
+
+    <div class="sidebar-bottom-grid">
+      <button type="button" id="sidebar-dm-btn" class="btn btn-outline btn-sm">
+        <i class="fa-solid fa-envelope"></i> Pesan
+      </button>
+      <button type="button" id="sidebar-logout-btn" class="btn btn-danger-soft btn-sm">
+        <i class="fa-solid fa-right-from-bracket"></i> Keluar
+      </button>
+    </div>
+  </aside>
+
+  <!-- ==================== 9. STATUS BAR PENGGUNA & INDIKATOR SINYAL ==================== -->
+  <section class="student-status-bar">
+    <div class="status-bar-inner">
+      <div class="user-chip">
+        <div class="avatar-circle" id="top-user-avatar">S</div>
+        <div>
+          <div class="user-line">
+            <strong id="top-user-name">Belum Login</strong>
+            <span id="top-user-role-badge" class="role-badge">Siswa</span>
+          </div>
+          <div class="school-inline-row">
+            <small id="top-user-school">SMA IT Harapan Mulia Palembang</small>
+            <button type="button" id="quick-edit-school-btn" class="school-edit-btn" title="Ubah Nama Sekolah">
+              <i class="fa-solid fa-pen"></i> Ubah
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="metrics-strip">
+        <div class="metric-pill" id="signal-status-pill" title="Status Koneksi & Sinyal">
+          <i class="fa-solid fa-wifi text-emerald" id="signal-icon"></i>
+          <span id="signal-text">Sinyal Stabil</span>
+        </div>
+        <div class="metric-pill" title="Seluruh jawaban otomatis tersimpan">
+          <i class="fa-solid fa-cloud-arrow-up text-emerald"></i>
+          <span id="db-sync-label">Auto-Save Aktif</span>
+        </div>
+        <div class="metric-pill">
+          <i class="fa-solid fa-star text-amber"></i>
+          <span><strong id="top-score-val">0</strong>/100 • <strong id="top-xp-val">0</strong> XP</span>
+        </div>
+        <button type="button" id="top-download-cta" class="btn btn-emerald btn-xs">
+          <i class="fa-solid fa-file-arrow-down"></i> Unduh Hasilku
+        </button>
+        <div class="metric-pill energy-pill" title="Energi Tantangan Pola">
+          <span id="energy-hearts">❤️❤️❤️</span>
+          <span id="energy-count">3/3</span>
+          <button type="button" id="recharge-energy-btn" class="mini-recharge-btn" title="Isi Ulang Energi">
+            <i class="fa-solid fa-rotate-right"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="self-guided-strip" id="self-guided-strip">
+      <div class="guided-current-step">
+        <span class="guided-step-badge" id="guided-step-badge"><i class="fa-solid fa-compass"></i> Panduan Aktif</span>
+        <span id="guided-step-instruction">Mulai dari mempelajari materi per halaman di bawah ini.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Toast Peringatan Middleware -->
+  <div id="middleware-toast" class="middleware-toast" hidden>
+    <i class="fa-solid fa-lock"></i>
+    <span id="middleware-toast-msg">Selesaikan seluruh soal pada tahap saat ini terlebih dahulu untuk membuka menu berikutnya.</span>
+  </div>
+
+  <!-- ==================== 10. KONTEN UTAMA (SPA PAGES) ==================== -->
+  <main class="main-container">
+
+    <!-- ==================== HALAMAN 1: BERANDA ==================== -->
+    <section id="page-home" class="page-view active">
+      <div class="hero-card">
+        <div class="hero-content">
+          <div class="hero-meta-badges">
+            <span class="eyebrow">INTELLIGENT TUTORING SYSTEM • KELAS X SMA</span>
+            <span class="school-pill-badge"><i class="fa-solid fa-school"></i> <span id="hero-school-name">SMA IT Harapan Mulia Palembang</span></span>
+          </div>
+          <h2>Kenali Polanya, <span class="text-gradient">Kuasai Numerasinya!</span></h2>
+          <p class="hero-desc">
+            Pelajari <strong>Barisan dan Deret Aritmetika</strong> secara bertahap dan terfokus dalam <strong>4 langkah sistematis</strong>. Estimasi waktu tuntas: <strong>40–50 menit</strong>.
+          </p>
+
+          <div class="student-steps-overview">
+            <div class="mini-step-card">
+              <div class="mini-step-icon"><i class="fa-solid fa-magnifying-glass"></i></div>
+              <div class="mini-step-body">
+                <strong>1. Info Awal</strong>
+                <span>Identifikasi suku pertama (<span class="math-eq">a</span>) &amp; urutan suku (<span class="math-eq">n</span>) dari cerita</span>
+                <em class="staff-only-ct">CT: Decomposition • Numerasi: Formulate</em>
+              </div>
+            </div>
+            <div class="mini-step-card">
+              <div class="mini-step-icon"><i class="fa-solid fa-chart-line"></i></div>
+              <div class="mini-step-body">
+                <strong>2. Pola Beda</strong>
+                <span>Temukan selisih tetap antar suku (<span class="math-eq">b = U<sub>2</sub> − U<sub>1</sub></span>)</span>
+                <em class="staff-only-ct">CT: Pattern Recognition • Numerasi: Formulate</em>
+              </div>
+            </div>
+            <div class="mini-step-card">
+              <div class="mini-step-icon"><i class="fa-solid fa-filter"></i></div>
+              <div class="mini-step-body">
+                <strong>3. Pilih Rumus</strong>
+                <span>Pilih model rumus suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>) atau deret (<span class="math-eq">S<sub>n</sub></span>)</span>
+                <em class="staff-only-ct">CT: Abstraction • Numerasi: Employ</em>
+              </div>
+            </div>
+            <div class="mini-step-card">
+              <div class="mini-step-icon"><i class="fa-solid fa-calculator"></i></div>
+              <div class="mini-step-body">
+                <strong>4. Hitung &amp; Evaluasi</strong>
+                <span>Substitusi nilai dan simpulkan solusi kontekstualnya</span>
+                <em class="staff-only-ct">CT: Algorithmic Thinking • Numerasi: Interpret</em>
+              </div>
+            </div>
+          </div>
+
+          <div class="btn-grid-horizontal">
+            <button type="button" class="btn btn-primary btn-lg" data-nav="page-materi">
+              <i class="fa-solid fa-play"></i> Mulai Belajar Sekarang
+            </button>
+            <button type="button" id="hero-guide-btn" class="btn btn-outline btn-lg">
+              <i class="fa-solid fa-compass"></i> Panduan Cepat
+            </button>
+            <button type="button" id="hero-zeta-btn" class="btn btn-soft btn-lg">
+              <i class="fa-solid fa-robot"></i> ZETA AI
+            </button>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="interactive-preview-card">
+            <div class="preview-header">
+              <span class="badge-pill"><i class="fa-solid fa-bolt"></i> TEBAK POLA CEPAT</span>
+              <span class="text-emerald"><i class="fa-solid fa-circle-check"></i> Klik Tanda Tanya (?)</span>
+            </div>
+            <p class="preview-prompt">
+              Diketahui barisan kursi gedung pertunjukan: <strong class="math-eq">U<sub>1</sub> = 2, U<sub>2</sub> = 5, U<sub>3</sub> = 8, U<sub>4</sub> = 11</strong>. Berapakah nilai <strong class="math-eq">U<sub>5</sub></strong>?
+            </p>
+            <div class="sequence-boxes">
+              <div class="seq-item"><small>U<sub>1</sub></small><strong>2</strong></div>
+              <div class="seq-item"><small>U<sub>2</sub></small><strong>5</strong></div>
+              <div class="seq-item"><small>U<sub>3</sub></small><strong>8</strong></div>
+              <div class="seq-item"><small>U<sub>4</sub></small><strong>11</strong></div>
+              <button type="button" id="quick-reveal-btn" class="seq-item seq-mystery" title="Klik untuk melihat jawaban">
+                <small>U<sub>5</sub></small><strong>?</strong>
+              </button>
+            </div>
+            <div id="quick-reveal-feedback" class="preview-feedback">
+              Klik kotak <strong>?</strong> di atas untuk membuktikan polanya!
+            </div>
+
+            <div class="preview-mini-summary">
+              <div><span>Suku Pertama (<span class="math-eq">a</span>)</span><strong>2</strong></div>
+              <div><span>Beda Tetap (<span class="math-eq">b</span>)</span><strong>+3</strong></div>
+              <div><span>Rumus Umum</span><strong class="math-eq">U<sub>n</sub> = a + (n − 1)b</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="home-roadmap-grid">
+        <div class="roadmap-card" data-nav="page-materi">
+          <div class="roadmap-badge">Tahap 1 • 10 Menit</div>
+          <h3><i class="fa-solid fa-book-open text-indigo"></i> Materi &amp; Unduh PDF</h3>
+          <p>Pelajari 5 halaman materi kontekstual beserta simulator grafik, lalu unduh modul PDF materi.</p>
+        </div>
+        <div class="roadmap-card" data-nav="page-game">
+          <div class="roadmap-badge">Tahap 2 • 8 Menit</div>
+          <h3><i class="fa-solid fa-gamepad text-emerald"></i> Tantangan Pola Bertingkat</h3>
+          <p>Selesaikan ke-4 level tantangan secara berurutan untuk mengasah kepekaan mengenali selisih tetap (<span class="math-eq">b</span>).</p>
+        </div>
+        <div class="roadmap-card" data-nav="page-latihan">
+          <div class="roadmap-badge">Tahap 3 (Inti) • 18 Menit</div>
+          <h3><i class="fa-solid fa-pen-to-square text-amber"></i> Ayo Berlatih Fokus Per Langkah</h3>
+          <p>Kerjakan soal langkah demi langkah (Langkah 1 tuntas &rarr; Langkah 2 &rarr; Langkah 3 &rarr; Langkah 4).</p>
+        </div>
+        <div class="roadmap-card" data-nav="page-kasus">
+          <div class="roadmap-badge">Tahap 4 &amp; 5 • 12 Menit</div>
+          <h3><i class="fa-solid fa-briefcase text-indigo"></i> Studi Kasus &amp; Forum Diskusi</h3>
+          <p>Terapkan rumus pada 3 studi kasus nyata, unggah refleksimu di forum, dan unduh rapor PDF/Excel.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 2: MATERI PER HALAMAN + UNDUH PDF MATERI ==================== -->
+    <section id="page-materi" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Tahap 1 dari 5 • Materi Bertahap Per Halaman</span>
+          <h2>Materi Kontekstual Barisan &amp; Deret Aritmetika</h2>
+          <p class="text-muted">Pelajari kelima bagian materi di bawah ini (4 konsep + Simulator Grafik). Setelah ke-5 bagian dipahami, tombol <strong>Unduh Modul Materi (.pdf)</strong> akan terbuka!</p>
+        </div>
+        <div class="btn-grid-horizontal">
+          <div class="progress-badge-box">
+            <span id="materi-read-progress">0 / 5 Bagian Dipahami</span>
+          </div>
+          <button type="button" id="download-materi-pdf-btn" class="btn btn-emerald btn-sm" disabled title="Pahami ke-5 bagian materi untuk mengunduh PDF">
+            <i class="fa-solid fa-file-pdf"></i> Unduh Materi (.pdf)
+          </button>
+        </div>
+      </div>
+
+      <div class="materi-stepper-tabs" id="materi-slide-tabs">
+        <button type="button" class="materi-tab-btn active" data-mslide="0">
+          <span class="m-tab-num">1</span> Barisan (<span class="math-eq">U<sub>n</sub></span>)
+        </button>
+        <button type="button" class="materi-tab-btn" data-mslide="1">
+          <span class="m-tab-num">2</span> Suku Tengah &amp; Sisipan
+        </button>
+        <button type="button" class="materi-tab-btn" data-mslide="2">
+          <span class="m-tab-num">3</span> Deret (<span class="math-eq">S<sub>n</sub></span>)
+        </button>
+        <button type="button" class="materi-tab-btn" data-mslide="3">
+          <span class="m-tab-num">4</span> Bedanya <span class="math-eq">U<sub>n</sub></span> &amp; <span class="math-eq">S<sub>n</sub></span>
+        </button>
+        <button type="button" class="materi-tab-btn" data-mslide="4">
+          <span class="m-tab-num">5</span> Simulator Grafik
+        </button>
+      </div>
+
+      <!-- SLIDE 1: BARISAN ARITMETIKA -->
+      <div class="materi-slide-view active" data-slide-index="0">
+        <article class="materi-single-stage-card">
+          <div class="materi-single-grid">
+            <div class="materi-single-visual">
+              <svg viewBox="0 0 360 160" class="svg-banner-lg" role="img" aria-label="Ilustrasi tabungan mingguan siswa SMA">
+                <rect width="360" height="160" rx="14" fill="#EEF2FF"/>
+                <rect x="30" y="95" width="48" height="45" rx="8" fill="#818CF8"/>
+                <rect x="98" y="75" width="48" height="65" rx="8" fill="#6366F1"/>
+                <rect x="166" y="55" width="48" height="85" rx="8" fill="#4F46E5"/>
+                <rect x="234" y="32" width="48" height="108" rx="8" fill="#4338CA"/>
+                <circle cx="318" cy="48" r="22" fill="#F59E0B"/>
+                <text x="318" y="54" text-anchor="middle" fill="#FFF" font-size="15" font-weight="bold">Rp</text>
+                <text x="54" y="87" text-anchor="middle" fill="#312E81" font-size="12" font-weight="bold">10rb</text>
+                <text x="122" y="67" text-anchor="middle" fill="#312E81" font-size="12" font-weight="bold">15rb</text>
+                <text x="190" y="47" text-anchor="middle" fill="#312E81" font-size="12" font-weight="bold">20rb</text>
+                <text x="258" y="24" text-anchor="middle" fill="#312E81" font-size="12" font-weight="bold">25rb</text>
+              </svg>
+            </div>
+            <div class="materi-single-content">
+              <div class="materi-tags">
+                <span class="tag-num">Halaman 1 dari 5 • Suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>)</span>
+                <span class="tag-ct staff-only-ct">CT: Decomposition, Pattern Recognition, Abstraction, Algorithm | Numerasi: Formulate, Employ, Interpret</span>
+              </div>
+              <h3>1. Barisan Aritmetika &amp; Beda Tetap (<em>b</em>)</h3>
+              <p>
+                <strong>Barisan aritmetika</strong> adalah susunan bilangan yang memiliki <strong>selisih tetap (<em>b</em>)</strong> antar dua suku yang berurutan. Contohnya uang saku yang ditabung bertambah Rp5.000 setiap minggu: <strong>10.000, 15.000, 20.000, 25.000</strong>.
+              </p>
+              <div class="formula-box">
+                <div class="math-eq" style="font-size:1.12rem;">U<sub>n</sub> = a + (n − 1)b &nbsp;&nbsp;dengan&nbsp;&nbsp; b = U<sub>2</sub> − U<sub>1</sub></div>
+                <small><span class="math-eq">a = U<sub>1</sub></span> (suku pertama), <span class="math-eq">b</span> = beda tetap (positif jika naik, negatif jika turun), <span class="math-eq">n</span> = urutan suku.</small>
+              </div>
+              <div class="materi-example-box">
+                <strong>Contoh Cepat:</strong> Baris ke-1 gedung pertunjukan memiliki 20 kursi, baris ke-2 memiliki 24 kursi, dan baris ke-3 memiliki 28 kursi. Berapa banyak kursi pada baris ke-5?
+                <ul class="example-ct-list">
+                  <li><strong>Info Awal:</strong> <span class="math-eq">a = 20</span> kursi, ditanya urutan baris <span class="math-eq">n = 5</span> <em class="staff-only-ct">[Numerasi: Formulate • CT: Decomposition]</em></li>
+                  <li><strong>Pola Beda:</strong> Selisih tetap <span class="math-eq">b = 24 − 20 = +4</span> kursi/baris <em class="staff-only-ct">[Numerasi: Formulate • CT: Pattern Recognition]</em></li>
+                  <li><strong>Pilih &amp; Hitung Rumus:</strong> Gunakan rumus suku ke-<em>n</em>: <span class="math-eq">U<sub>5</sub> = 20 + (5 − 1)(4) = 20 + 16 = 36</span> <em class="staff-only-ct">[Numerasi: Employ • CT: Abstraction &amp; Algorithm]</em></li>
+                  <li><strong>Kesimpulan:</strong> Banyak kursi pada baris ke-5 adalah <strong>36 kursi</strong> <em class="staff-only-ct">[Numerasi: Interpret • CT: Evaluation]</em></li>
+                </ul>
+              </div>
+              <div class="materi-slide-actions">
+                <button type="button" class="btn btn-outline mark-materi-btn" data-materi="m1">
+                  <i class="fa-regular fa-square-check"></i> Saya Paham Konsep Ini
+                </button>
+                <button type="button" class="btn btn-primary next-mslide-btn" data-goto-mslide="1">
+                  Selanjutnya: Suku Tengah <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- SLIDE 2: SUKU TENGAH & SISIPAN -->
+      <div class="materi-slide-view" data-slide-index="1" hidden>
+        <article class="materi-single-stage-card">
+          <div class="materi-single-grid">
+            <div class="materi-single-visual">
+              <svg viewBox="0 0 360 160" class="svg-banner-lg" role="img" aria-label="Ilustrasi suku tengah dan sisipan kursi">
+                <rect width="360" height="160" rx="14" fill="#ECFDF5"/>
+                <circle cx="50" cy="76" r="22" fill="#10B981"/>
+                <circle cx="115" cy="76" r="18" fill="#6EE7B7" stroke="#059669" stroke-dasharray="3 2"/>
+                <circle cx="180" cy="76" r="26" fill="#059669"/>
+                <circle cx="245" cy="76" r="18" fill="#6EE7B7" stroke="#059669" stroke-dasharray="3 2"/>
+                <circle cx="310" cy="76" r="22" fill="#10B981"/>
+                <text x="50" y="81" text-anchor="middle" fill="#FFF" font-size="13" font-weight="bold">a</text>
+                <text x="180" y="81" text-anchor="middle" fill="#FFF" font-size="15" font-weight="bold">Ut</text>
+                <text x="310" y="81" text-anchor="middle" fill="#FFF" font-size="13" font-weight="bold">Un</text>
+                <text x="180" y="132" text-anchor="middle" fill="#065F46" font-size="12" font-weight="bold">Titik Tengah (Ut) &amp; Sisipan k Bilangan (b')</text>
+              </svg>
+            </div>
+            <div class="materi-single-content">
+              <div class="materi-tags">
+                <span class="tag-num">Halaman 2 dari 5 • Suku Tengah &amp; Sisipan</span>
+                <span class="tag-ct staff-only-ct">CT: Decomposition, Pattern Recognition, Abstraction, Algorithm | Numerasi: Formulate, Employ, Interpret</span>
+              </div>
+              <h3>2. Suku Tengah (<span class="math-eq">U<sub>t</sub></span>) &amp; Sisipan (<em>b'</em>)</h3>
+              <p>
+                Jika banyak suku (<em>n</em>) berjumlah <strong>ganjil</strong>, terdapat <strong>suku tengah (<span class="math-eq">U<sub>t</sub></span>)</strong> tepat di urutan <span class="math-eq">t = <span class="mfrac"><span class="mnum">n + 1</span><span class="mden">2</span></span></span>. Jika di antara dua suku disisipkan <em>k</em> bilangan baru, maka terbentuk beda baru (<em>b'</em>).
+              </p>
+              <div class="formula-box">
+                <div class="math-eq" style="font-size:1.12rem;">U<sub>t</sub> = <span class="mfrac"><span class="mnum">a + U<sub>n</sub></span><span class="mden">2</span></span> &nbsp;&nbsp;|&nbsp;&nbsp; b' = <span class="mfrac"><span class="mnum">b</span><span class="mden">k + 1</span></span></div>
+                <small><span class="math-eq">k</span> = banyaknya bilangan yang disisipkan di antara dua suku berurutan.</small>
+              </div>
+              <div class="materi-example-box">
+                <strong>Contoh Cepat:</strong> Di antara bilangan 8 dan 20 disisipkan 2 bilangan baru hingga membentuk barisan aritmetika. Tentukan beda baru (<span class="math-eq">b'</span>) dan susunan barisannya!
+                <ul class="example-ct-list">
+                  <li><strong>Info Awal:</strong> Suku awal <span class="math-eq">a = 8</span>, suku akhir = 20, banyak sisipan <span class="math-eq">k = 2</span> <em class="staff-only-ct">[Numerasi: Formulate • CT: Decomposition]</em></li>
+                  <li><strong>Pola Beda Awal:</strong> Selisih sebelum disisipkan <span class="math-eq">b = 20 − 8 = 12</span> <em class="staff-only-ct">[Numerasi: Formulate • CT: Pattern Recognition]</em></li>
+                  <li><strong>Pilih &amp; Hitung Rumus:</strong> <span class="math-eq">b' = <span class="mfrac"><span class="mnum">b</span><span class="mden">k + 1</span></span> = <span class="mfrac"><span class="mnum">12</span><span class="mden">2 + 1</span></span> = 4</span> <em class="staff-only-ct">[Numerasi: Employ • CT: Abstraction &amp; Algorithm]</em></li>
+                  <li><strong>Kesimpulan:</strong> Barisan barunya bertambah 4 setiap suku: <strong>8, 12, 16, 20</strong> <em class="staff-only-ct">[Numerasi: Interpret • CT: Evaluation]</em></li>
+                </ul>
+              </div>
+              <div class="materi-slide-actions">
+                <button type="button" class="btn btn-outline prev-mslide-btn" data-goto-mslide="0">
+                  <i class="fa-solid fa-arrow-left"></i> Sebelumnya
+                </button>
+                <button type="button" class="btn btn-outline mark-materi-btn" data-materi="m2">
+                  <i class="fa-regular fa-square-check"></i> Saya Paham Konsep Ini
+                </button>
+                <button type="button" class="btn btn-primary next-mslide-btn" data-goto-mslide="2">
+                  Selanjutnya: Deret Sn <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- SLIDE 3: DERET ARITMETIKA (Sn) -->
+      <div class="materi-slide-view" data-slide-index="2" hidden>
+        <article class="materi-single-stage-card">
+          <div class="materi-single-grid">
+            <div class="materi-single-visual">
+              <svg viewBox="0 0 360 160" class="svg-banner-lg" role="img" aria-label="Ilustrasi akumulasi deret aritmetika">
+                <rect width="360" height="160" rx="14" fill="#FFFBEB"/>
+                <rect x="24" y="42" width="58" height="76" rx="10" fill="#FDE68A"/>
+                <text x="53" y="85" text-anchor="middle" fill="#92400E" font-size="14" font-weight="bold">U1</text>
+                <text x="96" y="85" text-anchor="middle" fill="#D97706" font-size="18" font-weight="bold">+</text>
+                <rect x="110" y="42" width="58" height="76" rx="10" fill="#FCD34D"/>
+                <text x="139" y="85" text-anchor="middle" fill="#92400E" font-size="14" font-weight="bold">U2</text>
+                <text x="182" y="85" text-anchor="middle" fill="#D97706" font-size="18" font-weight="bold">+</text>
+                <rect x="196" y="42" width="58" height="76" rx="10" fill="#FBBF24"/>
+                <text x="225" y="85" text-anchor="middle" fill="#92400E" font-size="14" font-weight="bold">...Un</text>
+                <text x="268" y="85" text-anchor="middle" fill="#D97706" font-size="18" font-weight="bold">=</text>
+                <rect x="282" y="34" width="58" height="92" rx="10" fill="#D97706"/>
+                <text x="311" y="85" text-anchor="middle" fill="#FFF" font-size="16" font-weight="bold">Sn</text>
+              </svg>
+            </div>
+            <div class="materi-single-content">
+              <div class="materi-tags">
+                <span class="tag-num">Halaman 3 dari 5 • Jumlah Deret (<span class="math-eq">S<sub>n</sub></span>)</span>
+                <span class="tag-ct staff-only-ct">CT: Decomposition, Pattern Recognition, Abstraction, Algorithm | Numerasi: Formulate, Employ, Interpret</span>
+              </div>
+              <h3>3. Deret Aritmetika (<span class="math-eq">S<sub>n</sub></span>)</h3>
+              <p>
+                <strong>Deret aritmetika (<span class="math-eq">S<sub>n</sub></span>)</strong> adalah <strong>jumlah akumulasi keseluruhan</strong> dari <em>n</em> suku pertama barisan aritmetika (<span class="math-eq">U<sub>1</sub> + U<sub>2</sub> + U<sub>3</sub> + ... + U<sub>n</sub></span>).
+              </p>
+              <div class="formula-box">
+                <div class="math-eq" style="font-size:1.12rem;">S<sub>n</sub> = <span class="mfrac"><span class="mnum">n</span><span class="mden">2</span></span> (2a + (n − 1)b) &nbsp;&nbsp;atau&nbsp;&nbsp; S<sub>n</sub> = <span class="mfrac"><span class="mnum">n</span><span class="mden">2</span></span> (a + U<sub>n</sub>)</div>
+                <small>Gunakan rumus pertama jika <span class="math-eq">U<sub>n</sub></span> belum diketahui, dan rumus kedua jika suku terakhir <span class="math-eq">U<sub>n</sub></span> sudah diketahui.</small>
+              </div>
+              <div class="materi-example-box">
+                <strong>Contoh Cepat:</strong> Pengrajin kain jumputan membuat 25 lembar kain di bulan ke-1, 35 lembar di bulan ke-2, dan 45 lembar di bulan ke-3. Berapa total produksi selama 6 bulan?
+                <ul class="example-ct-list">
+                  <li><strong>Info Awal:</strong> Produksi bulan pertama <span class="math-eq">a = 25</span> lembar, durasi <span class="math-eq">n = 6</span> bulan <em class="staff-only-ct">[Numerasi: Formulate • CT: Decomposition]</em></li>
+                  <li><strong>Pola Beda:</strong> Penambahan tetap <span class="math-eq">b = 35 − 25 = +10</span> lembar/bulan <em class="staff-only-ct">[Numerasi: Formulate • CT: Pattern Recognition]</em></li>
+                  <li><strong>Pilih &amp; Hitung Rumus:</strong> <span class="math-eq">S<sub>6</sub> = <span class="mfrac"><span class="mnum">6</span><span class="mden">2</span></span> (2(25) + 5(10)) = 3 × 100 = 300</span> <em class="staff-only-ct">[Numerasi: Employ • CT: Abstraction &amp; Algorithm]</em></li>
+                  <li><strong>Kesimpulan:</strong> Total produksi kain selama 6 bulan adalah <strong>300 lembar</strong> <em class="staff-only-ct">[Numerasi: Interpret • CT: Evaluation]</em></li>
+                </ul>
+              </div>
+              <div class="materi-slide-actions">
+                <button type="button" class="btn btn-outline prev-mslide-btn" data-goto-mslide="1">
+                  <i class="fa-solid fa-arrow-left"></i> Sebelumnya
+                </button>
+                <button type="button" class="btn btn-outline mark-materi-btn" data-materi="m3">
+                  <i class="fa-regular fa-square-check"></i> Saya Paham Konsep Ini
+                </button>
+                <button type="button" class="btn btn-primary next-mslide-btn" data-goto-mslide="3">
+                  Selanjutnya: Bedanya Un &amp; Sn <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- SLIDE 4: STRATEGI MEMBEDAKAN Un VS Sn -->
+      <div class="materi-slide-view" data-slide-index="3" hidden>
+        <article class="materi-single-stage-card">
+          <div class="materi-single-grid">
+            <div class="materi-single-visual">
+              <svg viewBox="0 0 360 160" class="svg-banner-lg" role="img" aria-label="Ilustrasi perbandingan Un dan Sn yang sejajar">
+                <rect width="360" height="160" rx="14" fill="#F3E8FF"/>
+                <rect x="18" y="24" width="154" height="112" rx="12" fill="#DDD6FE"/>
+                <text x="95" y="54" text-anchor="middle" fill="#5B21B6" font-size="15" font-weight="bold">Gunakan Un</text>
+                <text x="95" y="82" text-anchor="middle" fill="#6D28D9" font-size="10.5" font-weight="bold">1. "Kursi pada baris ke-12"</text>
+                <text x="95" y="106" text-anchor="middle" fill="#6D28D9" font-size="10.5" font-weight="bold">2. "Tabungan di bulan ke-10"</text>
+                <rect x="188" y="24" width="154" height="112" rx="12" fill="#C4B5FD"/>
+                <text x="265" y="54" text-anchor="middle" fill="#4C1D95" font-size="15" font-weight="bold">Gunakan Sn</text>
+                <text x="265" y="82" text-anchor="middle" fill="#4C1D95" font-size="10.5" font-weight="bold">1. "Jumlah seluruh 12 baris kursi"</text>
+                <text x="265" y="106" text-anchor="middle" fill="#4C1D95" font-size="10.5" font-weight="bold">2. "Total tabungan 10 bulan"</text>
+              </svg>
+            </div>
+            <div class="materi-single-content">
+              <div class="materi-tags">
+                <span class="tag-num">Halaman 4 dari 5 • Strategi Memilih Rumus</span>
+                <span class="tag-ct staff-only-ct">CT: Abstraction &amp; Evaluation | Numerasi: Formulate &amp; Employ</span>
+              </div>
+              <h3>4. Cara Cepat Membedakan Soal <span class="math-eq">U<sub>n</sub></span> vs <span class="math-eq">S<sub>n</sub></span></h3>
+              <p>
+                Perhatikan perbandingan sejajar antara konteks <strong>kursi gedung</strong> dan <strong>tabungan bulanan</strong> agar tidak tertukar saat memilih rumus:
+              </p>
+              <div class="formula-box">
+                <div><strong>1. Pilih Rumus <span class="math-eq">U<sub>n</sub></span> (Satu Urutan Tertentu):</strong><br>
+                • Konteks Kursi: <em>"Berapa banyak kursi pada baris ke-12 saja?"</em><br>
+                • Konteks Bulan: <em>"Berapa besar tabungan di bulan ke-10 saja?"</em></div>
+                <div style="margin-top:8px;"><strong>2. Pilih Rumus <span class="math-eq">S<sub>n</sub></span> (Total Gabungan dari Awal):</strong><br>
+                • Konteks Kursi: <em>"Berapa jumlah seluruh kursi pada 12 baris tersebut?"</em><br>
+                • Konteks Bulan: <em>"Berapa total tabungan selama 10 bulan?"</em></div>
+              </div>
+              <div class="materi-example-box">
+                <strong>Contoh Cepat Analisis Kata Kunci:</strong>
+                <ul class="example-ct-list">
+                  <li><strong>Identifikasi Pertanyaan:</strong> Cek apakah soal meminta nilai pada 1 titik urutan atau gabungan seluruh urutan <em class="staff-only-ct">[Numerasi: Formulate • CT: Decomposition]</em></li>
+                  <li><strong>Pemilihan Model:</strong> Kata <em>"pada baris ke-n"</em> &rarr; <span class="math-eq">U<sub>n</sub></span>; kata <em>"total seluruh n baris"</em> &rarr; <span class="math-eq">S<sub>n</sub></span> <em class="staff-only-ct">[Numerasi: Employ • CT: Abstraction]</em></li>
+                </ul>
+              </div>
+              <div class="materi-slide-actions">
+                <button type="button" class="btn btn-outline prev-mslide-btn" data-goto-mslide="2">
+                  <i class="fa-solid fa-arrow-left"></i> Sebelumnya
+                </button>
+                <button type="button" class="btn btn-outline mark-materi-btn" data-materi="m4">
+                  <i class="fa-regular fa-square-check"></i> Saya Paham Konsep Ini
+                </button>
+                <button type="button" class="btn btn-primary next-mslide-btn" data-goto-mslide="4">
+                  Selanjutnya: Simulator Grafik <i class="fa-solid fa-arrow-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- SLIDE 5: SIMULATOR VISUAL INTERAKTIF -->
+      <div class="materi-slide-view" data-slide-index="4" hidden>
+        <div class="simulator-panel">
+          <div class="sim-info">
+            <span class="badge-pill"><i class="fa-solid fa-sliders"></i> Halaman 5 dari 5 • Eksplorasi Visual</span>
+            <h3>Simulator Grafik <span class="math-eq">U<sub>n</sub></span> &amp; <span class="math-eq">S<sub>n</sub></span></h3>
+            <p class="text-muted">Geser nilai suku pertama (<em>a</em>), beda (<em>b</em>), dan banyak suku (<em>n</em>) untuk mengamati perubahan grafik secara langsung.</p>
+
+            <div class="sim-controls">
+              <div class="sim-control-item">
+                <div class="sim-label-row">
+                  <label for="sim-a">Suku Pertama (<em>a</em>)</label>
+                  <strong id="sim-a-val">10</strong>
+                </div>
+                <input type="range" id="sim-a" min="-20" max="50" step="1" value="10" />
+              </div>
+
+              <div class="sim-control-item">
+                <div class="sim-label-row">
+                  <label for="sim-b">Beda Tetap (<em>b</em>)</label>
+                  <strong id="sim-b-val">5</strong>
+                </div>
+                <input type="range" id="sim-b" min="-15" max="25" step="1" value="5" />
+              </div>
+
+              <div class="sim-control-item">
+                <div class="sim-label-row">
+                  <label for="sim-n">Banyak Suku (<em>n</em>)</label>
+                  <strong id="sim-n-val">8</strong>
+                </div>
+                <input type="range" id="sim-n" min="3" max="15" step="1" value="8" />
+              </div>
+            </div>
+
+            <div class="sim-results-grid">
+              <div class="sim-stat-card">
+                <small>Nilai Suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>)</small>
+                <strong id="sim-un-result">45</strong>
+              </div>
+              <div class="sim-stat-card">
+                <small>Total Deret (<span class="math-eq">S<sub>n</sub></span>)</small>
+                <strong id="sim-sn-result">220</strong>
+              </div>
+              <div class="sim-stat-card">
+                <small>Suku Tengah (<span class="math-eq">U<sub>t</sub></span>)</small>
+                <strong id="sim-ut-result">Genap</strong>
+              </div>
+            </div>
+
+            <div class="materi-slide-actions" style="margin-top:16px;">
+              <button type="button" class="btn btn-outline prev-mslide-btn" data-goto-mslide="3">
+                <i class="fa-solid fa-arrow-left"></i> Kembali ke Konsep 4
+              </button>
+              <button type="button" id="mark-sim-done-btn" class="btn btn-emerald">
+                <i class="fa-solid fa-check-double"></i> Saya Sudah Mencoba Simulator
+              </button>
+            </div>
+          </div>
+
+          <div class="sim-chart-box">
+            <canvas id="aritmetikaChart"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kontainer Tersembunyi untuk Cetak PDF Modul Materi Lengkap -->
+      <div id="printable-materi-module" class="printable-materi-sheet" hidden>
+        <h2>MODUL RINGKASAN MATERI BARISAN &amp; DERET ARITMETIKA — ITS SYANORA</h2>
+        <p><strong>Sekolah:</strong> SMA IT Harapan Mulia Palembang • <strong>Kelas:</strong> X SMA</p>
+        <hr style="margin:10px 0;" />
+        <h3>1. Barisan Aritmetika &amp; Beda Tetap (b)</h3>
+        <p>Barisan dengan selisih tetap antar suku berurutan. Rumus suku ke-n: <strong>Un = a + (n - 1)b</strong> dengan <strong>b = U2 - U1</strong>.</p>
+        <h3>2. Suku Tengah (Ut) &amp; Sisipan (b')</h3>
+        <p>Untuk banyak suku ganjil: <strong>Ut = (a + Un) / 2</strong>. Jika disisipkan k bilangan baru: <strong>b' = b / (k + 1)</strong>.</p>
+        <h3>3. Deret Aritmetika (Sn)</h3>
+        <p>Jumlah akumulasi n suku pertama: <strong>Sn = (n / 2) × (2a + (n - 1)b)</strong> atau <strong>Sn = (n / 2) × (a + Un)</strong>.</p>
+        <h3>4. Strategi Membedakan Soal Un dan Sn</h3>
+        <p>Gunakan <strong>Un</strong> jika ditanya nilai pada satu urutan tertentu (misal: kursi baris ke-12). Gunakan <strong>Sn</strong> jika ditanya jumlah keseluruhan dari awal (misal: jumlah seluruh 12 baris kursi atau total tabungan 10 bulan).</p>
+      </div>
+
+      <div class="stage-next-bar">
+        <span id="materi-gate-hint" class="gate-hint-text"><i class="fa-solid fa-circle-info"></i> Pahami kelima bagian materi (4 konsep + simulator) untuk membuka Unduh PDF Materi &amp; Tantangan Pola.</span>
+        <button type="button" class="btn btn-primary btn-lg" data-nav="page-game">
+          Lanjut ke Tahap 2: Tantangan Pola <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 3: TANTANGAN POLA ==================== -->
+    <section id="page-game" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Tahap 2 dari 5 • Pengenalan Pola Bertingkat</span>
+          <h2>Arena Tantangan Pola Aritmetika</h2>
+          <p class="text-muted">Selesaikan <strong>seluruh 4 level tantangan</strong> secara berurutan mulai dari Level 1 untuk membuka tahap Ayo Berlatih!</p>
+        </div>
+        <div class="game-level-pills" id="game-level-tabs">
+          <button type="button" class="level-pill active" data-level="0">Level 1</button>
+          <button type="button" class="level-pill" data-level="1">Level 2</button>
+          <button type="button" class="level-pill" data-level="2">Level 3</button>
+          <button type="button" class="level-pill" data-level="3">Level 4</button>
+        </div>
+      </div>
+
+      <div class="game-arena-card">
+        <div class="game-meta-row">
+          <span id="game-badge-ct" class="tag-ct staff-only-ct">CT: Pattern Recognition</span>
+          <span id="game-badge-num" class="tag-num">Fokus: Menentukan pola selisih tetap</span>
+        </div>
+
+        <h3 id="game-title">Level 1: Pola Kursi Stadion</h3>
+        <p id="game-story" class="game-story"></p>
+
+        <div id="game-sequence-display" class="game-sequence-row"></div>
+
+        <div class="game-input-row">
+          <div class="input-group-clean">
+            <label for="game-answer-input">Jawabanmu (Tekan Enter untuk Periksa):</label>
+            <input type="text" id="game-answer-input" placeholder="Ketik angka jawaban lalu tekan Enter..." />
+          </div>
+
+          <div class="btn-grid-horizontal">
+            <button type="button" id="check-game-btn" class="btn btn-primary">
+              <i class="fa-solid fa-check"></i> Periksa (Enter)
+            </button>
+            <button type="button" id="next-game-level-btn" class="btn btn-emerald" hidden>
+              Lanjut ke Level Berikutnya <i class="fa-solid fa-arrow-right"></i>
+            </button>
+            <button type="button" id="hint-game-btn" class="btn btn-outline">
+              <i class="fa-solid fa-lightbulb"></i> Petunjuk
+            </button>
+            <button type="button" id="ask-zeta-game-btn" class="btn btn-soft">
+              <i class="fa-solid fa-robot"></i> ZETA AI
+            </button>
+          </div>
+        </div>
+
+        <div id="game-mistake-notes" class="mistake-note-box" hidden></div>
+        <div id="game-feedback-box" class="feedback-banner" hidden></div>
+      </div>
+
+      <div class="stage-next-bar">
+        <span id="game-gate-hint" class="gate-hint-text"><i class="fa-solid fa-circle-info"></i> Selesaikan ke-4 level tantangan secara berurutan (0/4 selesai) untuk membuka Ayo Berlatih.</span>
+        <button type="button" class="btn btn-primary btn-lg" data-nav="page-latihan">
+          Lanjut ke Tahap 3: Ayo Berlatih <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 4: AYO BERLATIH (FOKUS 1 KOLOM/LANGKAH PER TAMPILAN SAMPAI TUNTAS) ==================== -->
+    <section id="page-latihan" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Tahap 3 dari 5 • Latihan Terfokus Langkah demi Langkah</span>
+          <h2>Ayo Berlatih: Penyelesaian Masalah Bertahap</h2>
+          <p class="text-muted">
+            Kerjakan <strong>satu langkah per tampilan</strong>. Jika langkah saat ini sudah benar, kamu otomatis lanjut ke langkah berikutnya. Saat ke-4 langkah benar, ringkasan utuh akan ditampilkan!
+          </p>
+        </div>
+        <div class="problem-selector" id="latihan-selector">
+          <button type="button" class="prob-tab active" data-prob="0">Soal 1 (Kursi)</button>
+          <button type="button" class="prob-tab" data-prob="1">Soal 2 (Plastik)</button>
+          <button type="button" class="prob-tab" data-prob="2">Soal 3 (Jumputan)</button>
+          <button type="button" class="prob-tab" data-prob="3">Soal 4 (Tabungan)</button>
+        </div>
+      </div>
+
+      <div class="workshop-card">
+        <div id="latihan-visual-banner" class="problem-visual-banner"></div>
+
+        <div class="workshop-meta">
+          <span id="latihan-num-indicator" class="tag-num">Konteks Numerasi</span>
+          <span id="latihan-ct-indicator" class="tag-ct staff-only-ct">4 Pilar CT Terintegrasi</span>
+          <span id="latihan-attempt-badge" class="tag-attempt"><i class="fa-solid fa-clipboard-check"></i> Progres Soal</span>
+        </div>
+
+        <h3 id="latihan-title">Judul Soal</h3>
+        <div id="latihan-story" class="problem-story-box"></div>
+
+        <!-- Stepper Indikator 4 Kolom/Langkah dalam 1 Soal -->
+        <div class="single-step-progress-bar" id="latihan-step-pills">
+          <div class="step-pill-item active" id="pill-step-1">
+            <span class="sp-num">1</span>
+            <span>Langkah 1: Info Awal (<span class="math-eq">a, n</span>)</span>
+          </div>
+          <div class="step-pill-item" id="pill-step-2">
+            <span class="sp-num">2</span>
+            <span>Langkah 2: Pola Beda (<span class="math-eq">b</span>)</span>
+          </div>
+          <div class="step-pill-item" id="pill-step-3">
+            <span class="sp-num">3</span>
+            <span>Langkah 3: Pilih Rumus</span>
+          </div>
+          <div class="step-pill-item" id="pill-step-4">
+            <span class="sp-num">4</span>
+            <span>Langkah 4: Hitung &amp; Simpulan</span>
+          </div>
+        </div>
+
+        <div id="latihan-mistake-notes" class="mistake-note-box" hidden></div>
+
+        <!-- AREA FOKUS 1 KOLOM LANGKAH AKTIF -->
+        <div id="latihan-active-step-wrapper" class="focused-step-container">
+          <!-- Langkah 1 -->
+          <div class="ct-step-box focused-single-box" id="box-step-1">
+            <div class="ct-step-header">
+              <div class="step-header-row">
+                <span class="step-badge">Langkah 1 dari 4</span>
+                <span class="step-lock-status" id="status-step-1"></span>
+              </div>
+              <strong>Identifikasi Informasi Awal (<span class="math-eq">a</span> &amp; <span class="math-eq">n</span>)</strong>
+              <small class="staff-only-ct">CT: Decomposition | Numerasi: Formulate</small>
+            </div>
+            <p class="step-instruction">Berdasarkan cerita soal di atas, masukkan nilai suku pertama (<span class="math-eq">a</span>) dan urutan/banyak suku (<span class="math-eq">n</span>) yang ditanyakan:</p>
+            <div class="dual-input-row">
+              <div>
+                <label for="step1-a" id="label-step1-a">Suku pertama (<em>a</em>)</label>
+                <div class="currency-input-wrap" id="wrap-step1-a">
+                  <span class="currency-prefix" id="prefix-step1-a" hidden><i class="fa-solid fa-money-bill-wave"></i> Rp</span>
+                  <input type="text" id="step1-a" class="latihan-enter-input" placeholder="Ketik nilai a..." />
+                </div>
+              </div>
+              <div>
+                <label for="step1-n">Banyak/Urutan suku (<em>n</em>)</label>
+                <input type="number" id="step1-n" class="latihan-enter-input" placeholder="Ketik nilai n..." />
+              </div>
+            </div>
+          </div>
+
+          <!-- Langkah 2 -->
+          <div class="ct-step-box focused-single-box" id="box-step-2" hidden>
+            <div class="ct-step-header">
+              <div class="step-header-row">
+                <span class="step-badge">Langkah 2 dari 4</span>
+                <span class="step-lock-status" id="status-step-2"></span>
+              </div>
+              <strong>Menentukan Pola Selisih / Beda Tetap (<span class="math-eq">b</span>)</strong>
+              <small class="staff-only-ct">CT: Pattern Recognition | Numerasi: Formulate</small>
+            </div>
+            <p class="step-instruction" id="label-step2-desc">Langkah 1 sudah tepat! Sekarang berapakah selisih tetap (<span class="math-eq">b = U<sub>2</sub> − U<sub>1</sub></span>) antar suku pada soal di atas?</p>
+            <div class="currency-input-wrap" id="wrap-step2-b">
+              <span class="currency-prefix" id="prefix-step2-b" hidden><i class="fa-solid fa-money-bill-wave"></i> Rp</span>
+              <input type="text" id="step2-b" class="latihan-enter-input" placeholder="Ketik nilai b (gunakan tanda - jika berkurang)..." />
+            </div>
+          </div>
+
+          <!-- Langkah 3 -->
+          <div class="ct-step-box focused-single-box" id="box-step-3" hidden>
+            <div class="ct-step-header">
+              <div class="step-header-row">
+                <span class="step-badge">Langkah 3 dari 4</span>
+                <span class="step-lock-status" id="status-step-3"></span>
+              </div>
+              <strong>Memilih Model Rumus yang Tepat</strong>
+              <small class="staff-only-ct">CT: Abstraction | Numerasi: Employ</small>
+            </div>
+            <p class="step-instruction">Langkah 1 &amp; 2 sudah benar! Sekarang pilihlah rumus yang tepat untuk menjawab pertanyaan pada soal ini:</p>
+            <select id="step3-formula">
+              <option value="">-- Pilih Rumus --</option>
+              <option value="un">Rumus Suku ke-n: Un = a + (n - 1)b (Mencari nilai pada urutan ke-n saja)</option>
+              <option value="sn">Rumus Jumlah Deret: Sn = n/2 × (2a + (n - 1)b) (Mencari total akumulasi)</option>
+            </select>
+          </div>
+
+          <!-- Langkah 4 -->
+          <div class="ct-step-box focused-single-box" id="box-step-4" hidden>
+            <div class="ct-step-header">
+              <div class="step-header-row">
+                <span class="step-badge">Langkah 4 dari 4</span>
+                <span class="step-lock-status" id="status-step-4"></span>
+              </div>
+              <strong>Perhitungan Akhir &amp; Penarikan Kesimpulan</strong>
+              <small class="staff-only-ct">CT: Algorithmic Thinking | Numerasi: Employ &amp; Interpret</small>
+            </div>
+            <p class="step-instruction" id="label-step4-desc">Langkah 1, 2, dan 3 sudah benar! Substitusikan nilainya ke rumus yang kamu pilih, hitung hasil akhirnya, dan pilih kesimpulan yang tepat:</p>
+            <div class="dual-input-row">
+              <div class="currency-input-wrap" id="wrap-step4-ans">
+                <span class="currency-prefix" id="prefix-step4-ans" hidden><i class="fa-solid fa-money-bill-wave"></i> Rp</span>
+                <input type="text" id="step4-result" class="latihan-enter-input" placeholder="Ketik hasil akhir..." />
+              </div>
+              <select id="step4-conclusion">
+                <option value="">-- Pilih Kesimpulan --</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- KARTU RINGKASAN LENGKAP KEEMPAT LANGKAH JAWABAN BENAR (MUNCUL SAAT 4/4 LANGKAH TUNTAS) -->
+        <div id="latihan-complete-summary-card" class="complete-summary-box" hidden></div>
+
+        <div class="btn-grid-horizontal workshop-actions">
+          <button type="button" id="verify-latihan-btn" class="btn btn-primary">
+            <i class="fa-solid fa-circle-check"></i> <span id="verify-latihan-btn-text">Periksa Langkah 1 (Enter)</span>
+          </button>
+          <button type="button" id="next-latihan-prob-btn" class="btn btn-emerald" hidden>
+            Lanjut ke Soal Berikutnya <i class="fa-solid fa-arrow-right"></i>
+          </button>
+          <button type="button" id="open-manual-workshop-btn" class="btn btn-outline">
+            <i class="fa-solid fa-graduation-cap"></i> Latihan Soal Setipe Langkah Ini
+          </button>
+          <button type="button" id="zeta-latihan-btn" class="btn btn-soft">
+            <i class="fa-solid fa-robot"></i> ZETA AI
+          </button>
+        </div>
+
+        <div id="latihan-diagnostic-box" class="diagnostic-panel" hidden></div>
+      </div>
+
+      <div class="stage-next-bar">
+        <span id="latihan-gate-hint" class="gate-hint-text"><i class="fa-solid fa-circle-info"></i> Selesaikan ke-4 soal Ayo Berlatih secara berurutan (0/4 selesai) untuk membuka Studi Kasus.</span>
+        <button type="button" class="btn btn-primary btn-lg" data-nav="page-kasus">
+          Lanjut ke Tahap 4: Studi Kasus <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 5: STUDI KASUS (FOKUS 1 KOLOM SUB-SOAL PER TAMPILAN SAMPAI TUNTAS) ==================== -->
+    <section id="page-kasus" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Tahap 4 dari 5 • Aplikasi Kontekstual Terfokus</span>
+          <h2>Studi Kasus Nyata (Format Mata Uang Otomatis)</h2>
+          <p class="text-muted">Jawab sub-pertanyaan satu per satu (<strong>Bagian a &rarr; Bagian b &rarr; Bagian c</strong>). Begitu ketiga bagian benar, ringkasan utuh akan ditampilkan!</p>
+        </div>
+        <div class="problem-selector" id="kasus-selector">
+          <button type="button" class="prob-tab active" data-kasus-idx="0">Kasus 1 (Kas Kelas)</button>
+          <button type="button" class="prob-tab" data-kasus-idx="1">Kasus 2 (Bazar OSIS)</button>
+          <button type="button" class="prob-tab" data-kasus-idx="2">Kasus 3 (Sewa Kursi)</button>
+        </div>
+      </div>
+
+      <div id="kasus-single-container"></div>
+
+      <div class="stage-next-bar">
+        <span id="kasus-gate-hint" class="gate-hint-text"><i class="fa-solid fa-circle-info"></i> Selesaikan ke-3 paket Studi Kasus secara berurutan (0/3 selesai) untuk membuka Forum Diskusi.</span>
+        <button type="button" class="btn btn-primary btn-lg" data-nav="page-diskusi">
+          Lanjut ke Tahap 5: Forum Diskusi &amp; Refleksi <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 6: FORUM DISKUSI & REFLEKSI ==================== -->
+    <section id="page-diskusi" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Tahap 5 dari 5 • Refleksi &amp; Kolaborasi</span>
+          <h2>Forum Diskusi &amp; Refleksi Belajar</h2>
+          <p class="text-muted">Tuliskan kesimpulanmu dan lampirkan foto coretan/file pengerjaanmu. Kamu juga dapat mengedit kembali catatan yang sudah dikirim.</p>
+        </div>
+      </div>
+
+      <div class="discussion-layout">
+        <form id="discussion-form" class="discussion-form-card">
+          <h3 id="disc-form-title"><i class="fa-solid fa-pen-clip"></i> Kirim Catatan Refleksi</h3>
+          <input type="hidden" id="disc-edit-id" value="" />
+
+          <div class="form-group">
+            <label for="disc-topic">Topik Bahasan</label>
+            <select id="disc-topic" required>
+              <option value="Membedakan Rumus Un dan Sn">Cara Membedakan Rumus Un dan Sn</option>
+              <option value="Menentukan Beda Tetap (b) dan Sisipan (b')">Menentukan Beda Tetap (b) dan Sisipan (b')</option>
+              <option value="Evaluasi Target Produksi Kain Jumputan">Evaluasi Target Produksi Kain Jumputan</option>
+              <option value="Strategi Memilih Skema Tabungan Terbaik">Strategi Memilih Skema Tabungan Terbaik</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="disc-message">Penjelasan / Pertanyaanmu</label>
+            <textarea id="disc-message" rows="4" placeholder="Tuliskan langkah penyelesaian atau kesimpulanmu..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label for="disc-file-input"><i class="fa-solid fa-paperclip"></i> Unggah Lampiran Coretan / Gambar / Dokumen (Opsional)</label>
+            <input type="file" id="disc-file-input" accept="image/*,.pdf,.doc,.docx,.xlsx" class="file-upload-input" />
+            <small id="disc-file-preview-label" class="text-muted" style="display:block;margin-top:4px;"></small>
+          </div>
+
+          <div class="btn-grid-horizontal">
+            <button type="submit" id="disc-submit-btn" class="btn btn-primary" style="flex:1;">
+              <i class="fa-solid fa-paper-plane"></i> Publikasikan ke Forum
+            </button>
+            <button type="button" id="disc-cancel-edit-btn" class="btn btn-outline" hidden>
+              Batal Edit
+            </button>
+          </div>
+        </form>
+
+        <div class="discussion-feed" id="discussion-feed-list"></div>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 7: PROFIL & KARAKTERISTIK SISWA ==================== -->
+    <section id="page-profil" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill">Portofolio &amp; Karakteristik Siswa</span>
+          <h2>Profil Siswa, Karakteristik Belajar &amp; Rapor Capaian</h2>
+        </div>
+        <div class="btn-grid-horizontal">
+          <button type="button" id="profile-pdf-btn" class="btn btn-primary">
+            <i class="fa-solid fa-file-pdf"></i> Unduh Rapor PDF
+          </button>
+          <button type="button" id="profile-xlsx-btn" class="btn btn-emerald">
+            <i class="fa-solid fa-file-excel"></i> Unduh Excel
+          </button>
+        </div>
+      </div>
+
+      <div class="profile-layout">
+        <div class="profile-card">
+          <h3><i class="fa-solid fa-id-card"></i> Identitas &amp; Karakteristik Siswa</h3>
+          <div class="form-group">
+            <label for="prof-name">Nama Lengkap</label>
+            <input type="text" id="prof-name" placeholder="Nama lengkap siswa" />
+          </div>
+          <div class="form-group">
+            <label for="prof-school">Asal Sekolah / Institusi (Dapat Diedit)</label>
+            <input type="text" id="prof-school" value="SMA IT Harapan Mulia Palembang" />
+          </div>
+          <div class="dual-input-row" style="margin-bottom:14px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="prof-class">Kelas / Kelompok</label>
+              <input type="text" id="prof-class" placeholder="Contoh: X.1" />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label for="prof-age">Usia (Tahun)</label>
+              <input type="number" id="prof-age" min="10" max="99" value="15" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="prof-gender">Jenis Kelamin</label>
+            <select id="prof-gender">
+              <option value="Perempuan">Perempuan (P)</option>
+              <option value="Laki-laki">Laki-laki (L)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="prof-intensity">Intensitas Belajar Matematika Mandiri</label>
+            <select id="prof-intensity">
+              <option value="Tinggi (> 4 jam/minggu)">Tinggi (&gt; 4 jam/minggu)</option>
+              <option value="Sedang (2 - 4 jam/minggu)">Sedang (2 – 4 jam/minggu)</option>
+              <option value="Rendah (< 2 jam/minggu)">Rendah (&lt; 2 jam/minggu)</option>
+            </select>
+          </div>
+          <button type="button" id="save-profile-btn" class="btn btn-primary btn-block">
+            <i class="fa-solid fa-floppy-disk"></i> Simpan Identitas &amp; Karakteristik
+          </button>
+        </div>
+
+        <div id="printable-report-area" class="report-card">
+          <div class="report-header">
+            <div>
+              <span class="badge-pill">LAPORAN HASIL BELAJAR ITS SYANORA</span>
+              <h3 id="report-student-name">Nama Siswa</h3>
+              <p id="report-student-meta" class="text-muted">SMA IT Harapan Mulia Palembang • Kelas X</p>
+              <small id="report-student-char" class="text-muted">Karakteristik: Perempuan • 15 Tahun • Intensitas Belajar: Sedang</small>
+            </div>
+            <div class="report-total-score">
+              <small>Skor Ketuntasan ITS</small>
+              <strong id="report-score-big">0</strong>
+            </div>
+          </div>
+
+          <h4>Capaian Indikator Kemampuan Numerasi</h4>
+          <div class="numeracy-bars">
+            <div class="num-bar-item">
+              <div class="num-bar-label">
+                <span>1. Merumuskan Masalah ke Model Matematika (<em>Formulate</em>)</span>
+                <strong id="bar-num1-val">0%</strong>
+              </div>
+              <div class="progress-track"><div id="bar-num1-fill" class="progress-fill" style="width: 0%"></div></div>
+            </div>
+            <div class="num-bar-item">
+              <div class="num-bar-label">
+                <span>2. Menggunakan Konsep &amp; Prosedur Rumus <span class="math-eq">U<sub>n</sub>, S<sub>n</sub></span> (<em>Employ</em>)</span>
+                <strong id="bar-num2-val">0%</strong>
+              </div>
+              <div class="progress-track"><div id="bar-num2-fill" class="progress-fill" style="width: 0%"></div></div>
+            </div>
+            <div class="num-bar-item">
+              <div class="num-bar-label">
+                <span>3. Menafsirkan &amp; Mengevaluasi Solusi Kontekstual (<em>Interpret</em>)</span>
+                <strong id="bar-num3-val">0%</strong>
+              </div>
+              <div class="progress-track"><div id="bar-num3-fill" class="progress-fill" style="width: 0%"></div></div>
+            </div>
+          </div>
+
+          <h4>Ringkasan Penyelesaian Aktivitas</h4>
+          <div class="report-summary-table-wrap">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Komponen Belajar</th>
+                  <th>Status / Progres</th>
+                  <th>Detail Capaian</th>
+                </tr>
+              </thead>
+              <tbody id="report-summary-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== HALAMAN 8: PANEL PENDIDIK & PENELITI UTAMA ==================== -->
+    <section id="page-staff" class="page-view" hidden>
+      <div class="section-header">
+        <div>
+          <span class="badge-pill"><i class="fa-solid fa-microscope"></i> Dashboard Akademik Pendidik, Validator &amp; Peneliti</span>
+          <h2>Flowchart ITS, Kisi-Kisi Numerasi-CT, Karakteristik Siswa &amp; Analisis N-Gain</h2>
+          <p class="text-muted">
+            Dilengkapi Flowchart keempat soal instrumen tesis, peta indikator numerasi OECD, filter analisis N-Gain &amp; KKM, pesan langsung, dan log perangkat/IP pengguna.
+          </p>
+        </div>
+        <div class="btn-grid-horizontal">
+          <button type="button" id="export-research-xlsx-btn" class="btn btn-emerald">
+            <i class="fa-solid fa-file-excel"></i> Ekspor Database Riset (.xlsx)
+          </button>
+          <button type="button" id="clear-logs-btn" class="btn btn-danger-soft researcher-only-el" hidden>
+            <i class="fa-solid fa-trash-can"></i> Bersihkan Log
+          </button>
+        </div>
+      </div>
+
+      <div class="staff-kpi-grid">
+        <div class="kpi-card">
+          <small>Total Log Aktivitas Tercatat</small>
+          <strong id="kpi-total-logs">0</strong>
+        </div>
+        <div class="kpi-card">
+          <small>Siswa Subjek Penelitian</small>
+          <strong id="kpi-active-students">0</strong>
+        </div>
+        <div class="kpi-card">
+          <small>Rata-rata Pre-Test &rarr; Post-Test</small>
+          <strong id="kpi-avg-score">0</strong>
+        </div>
+        <div class="kpi-card">
+          <small>Rata-rata N-Gain &amp; Ketuntasan KKM</small>
+          <strong id="kpi-kkm-rate">0%</strong>
+        </div>
+      </div>
+
+      <div class="staff-subtabs">
+        <button type="button" class="staff-tab-btn active" data-staff-tab="tab-flowchart">
+          <i class="fa-solid fa-sitemap"></i> 1. Flowchart ITS &amp; 4 Soal
+        </button>
+        <button type="button" class="staff-tab-btn" data-staff-tab="tab-blueprint">
+          <i class="fa-solid fa-compass-drafting"></i> 2. Kisi-Kisi &amp; Rubrik CT
+        </button>
+        <button type="button" class="staff-tab-btn" data-staff-tab="tab-scores">
+          <i class="fa-solid fa-user-graduate"></i> 3. Rekap Siswa, Filter N-Gain &amp; KKM
+        </button>
+        <button type="button" class="staff-tab-btn" data-staff-tab="tab-discussions">
+          <i class="fa-solid fa-comments"></i> 4. Rekap Diskusi &amp; Pesan Langsung
+        </button>
+        <button type="button" class="staff-tab-btn researcher-only-el" data-staff-tab="tab-logs" hidden>
+          <i class="fa-solid fa-shield-halved"></i> 5. Log Login/Logout, Device &amp; IP
+        </button>
+        <button type="button" class="staff-tab-btn researcher-only-el" data-staff-tab="tab-accounts" hidden>
+          <i class="fa-solid fa-users-gear"></i> 6. Kelola Akun &amp; Rahasia PIN
+        </button>
+      </div>
+
+      <!-- TAB 1: FLOWCHART -->
+      <div id="tab-flowchart" class="staff-tab-pane active">
+        <div class="staff-panel-box">
+          <div class="panel-box-top">
+            <div>
+              <h3>Flowchart Penyelesaian Masalah Numerasi Berbasis CT &amp; Sistem Bengkel Per Langkah SYANORA</h3>
+              <p class="text-muted">Pilih diagram alir di bawah ini untuk menampilkan alur logika sistem ITS atau bedah penyelesaian keempat soal utama instrumen tesis.</p>
+            </div>
+          </div>
+
+          <div class="flowchart-switch-bar">
+            <button type="button" class="fc-switch-btn active" data-fc="fc-system">
+              <i class="fa-solid fa-network-wired"></i> Alur Sistem ITS &amp; Bengkel Per Langkah
+            </button>
+            <button type="button" class="fc-switch-btn" data-fc="fc-prob-0">
+              Soal 1: Gedung Kesenian (<span class="math-eq">U<sub>12</sub></span>)
+            </button>
+            <button type="button" class="fc-switch-btn" data-fc="fc-prob-1">
+              Soal 2: Limbah Plastik (<span class="math-eq">S<sub>10</sub></span>)
+            </button>
+            <button type="button" class="fc-switch-btn" data-fc="fc-prob-2">
+              Soal 3: Kain Jumputan (<span class="math-eq">S<sub>6</sub></span>)
+            </button>
+            <button type="button" class="fc-switch-btn" data-fc="fc-prob-3">
+              Soal 4: Tabungan Dinda (<span class="math-eq">S<sub>12</sub></span>)
+            </button>
+            <button type="button" class="fc-switch-btn" data-fc="fc-all">
+              <i class="fa-solid fa-layer-group"></i> Tampilkan Semua Sekaligus
+            </button>
+          </div>
+
+          <div id="fc-system" class="flowchart-canvas">
+            <div class="fc-header-banner">
+              <h4>BAGAN ALIR (FLOWCHART) LOGIKA SISTEM ITS SYANORA &amp; PENYELESAIAN FOKUS 1 KOLOM PER LANGKAH</h4>
+              <span>Siswa Menyelesaikan Langkah 1 Sampai Benar &rarr; Lanjut Langkah 2 &rarr; Langkah 3 &rarr; Langkah 4 &rarr; Tampil Ringkasan Utuh</span>
+            </div>
+
+            <div class="fc-vertical-flow">
+              <div class="fc-node fc-oval">MULAI (Login Autentikasi &amp; Buka Tahap Belajar)</div>
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-row-3col">
+                <div class="fc-side-note fc-note-num">
+                  <strong>Indikator Numerasi (Formulate):</strong>
+                  <span>Mengenali struktur matematika dari masalah kontekstual.</span>
+                </div>
+                <div class="fc-node fc-parallelogram">
+                  <strong>INPUT MASALAH KONTEKSTUAL</strong>
+                  <p>Siswa membaca konteks masalah (Gedung Kesenian, Limbah Plastik, Kain Jumputan Palembang, atau Dua Skema Tabungan)</p>
+                </div>
+                <div class="fc-side-note fc-note-ct">
+                  <strong>Pilar CT:</strong>
+                  <span>Orientasi masalah &amp; identifikasi variabel.</span>
+                </div>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-row-3col">
+                <div class="fc-side-note fc-note-num">
+                  <strong>Numerasi (Formulate):</strong>
+                  <span>Mengidentifikasi variabel diketahui (<span class="math-eq">a, n</span>) dan ditanyakan.</span>
+                </div>
+                <div class="fc-node fc-process">
+                  <strong>KOLOM LANGKAH 1: DEKOMPOSISI (DECOMPOSITION)</strong>
+                  <p>Menentukan suku pertama (<span class="math-eq">a</span>) dan urutan suku (<span class="math-eq">n</span>) &rarr; <em>Jika Benar: Lanjut Buka Kolom Langkah 2</em></p>
+                </div>
+                <div class="fc-side-note fc-note-workshop">
+                  <strong>Jika Salah di Langkah 1 <i class="fa-solid fa-arrow-right"></i> Bengkel Langkah 1:</strong>
+                  <span>Melatih soal setipe menentukan <span class="math-eq">a</span> dan <span class="math-eq">n</span> sampai benar.</span>
+                </div>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-row-3col">
+                <div class="fc-side-note fc-note-num">
+                  <strong>Numerasi (Formulate):</strong>
+                  <span>Menentukan keteraturan pola selisih tetap antar suku.</span>
+                </div>
+                <div class="fc-node fc-process">
+                  <strong>KOLOM LANGKAH 2: PENGENALAN POLA (PATTERN RECOGNITION)</strong>
+                  <p>Menghitung beda tetap <span class="math-eq">b = U<sub>2</sub> − U<sub>1</sub></span> &rarr; <em>Jika Benar: Lanjut Buka Kolom Langkah 3</em></p>
+                </div>
+                <div class="fc-side-note fc-note-workshop">
+                  <strong>Jika Salah di Langkah 2 <i class="fa-solid fa-arrow-right"></i> Bengkel Langkah 2:</strong>
+                  <span>Fokus melatih soal setipe menghitung selisih <span class="math-eq">b</span> sampai benar.</span>
+                </div>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-row-3col">
+                <div class="fc-side-note fc-note-num">
+                  <strong>Numerasi (Employ):</strong>
+                  <span>Memilih model rumus matematika yang sesuai konteks.</span>
+                </div>
+                <div class="fc-node fc-process">
+                  <strong>KOLOM LANGKAH 3: ABSTRAKSI (ABSTRACTION)</strong>
+                  <p>Memilih rumus Suku ke-<em>n</em> (<span class="math-eq">U<sub>n</sub></span>) atau Jumlah Deret (<span class="math-eq">S<sub>n</sub></span>) &rarr; <em>Jika Benar: Lanjut Buka Kolom Langkah 4</em></p>
+                </div>
+                <div class="fc-side-note fc-note-workshop">
+                  <strong>Jika Salah di Langkah 3 <i class="fa-solid fa-arrow-right"></i> Bengkel Langkah 3:</strong>
+                  <span>Fokus melatih kata kunci pembeda <span class="math-eq">U<sub>n</sub></span> vs <span class="math-eq">S<sub>n</sub></span>.</span>
+                </div>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-row-3col">
+                <div class="fc-side-note fc-note-num">
+                  <strong>Numerasi (Employ &amp; Interpret):</strong>
+                  <span>Menghitung hasil akhir dan menafsirkan kesimpulan kontekstual.</span>
+                </div>
+                <div class="fc-node fc-process">
+                  <strong>KOLOM LANGKAH 4: BERPIKIR ALGORITMIK (ALGORITHMIC THINKING)</strong>
+                  <p>Substitusi nilai ke rumus (<span class="math-eq">U<sub>n</sub> / S<sub>n</sub></span>) dan evaluasi kesimpulan</p>
+                </div>
+                <div class="fc-side-note fc-note-workshop">
+                  <strong>Jika Salah di Langkah 4 <i class="fa-solid fa-arrow-right"></i> Bengkel Langkah 4:</strong>
+                  <span>Fokus melatih substitusi <span class="math-eq">U<sub>n</sub> / S<sub>n</sub></span> sampai tuntas.</span>
+                </div>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+
+              <div class="fc-node fc-parallelogram fc-output">
+                <strong>OUTPUT: TAMPILKAN RINGKASAN UTUH 4 LANGKAH BENAR &rarr; LANJUT SOAL BERIKUTNYA</strong>
+              </div>
+
+              <div class="fc-arrow"><i class="fa-solid fa-arrow-down"></i></div>
+              <div class="fc-node fc-oval">SELESAI</div>
+            </div>
+          </div>
+
+          <div id="fc-problems-container"></div>
+        </div>
+      </div>
+
+      <!-- TAB 2: KISI-KISI DETAIL & ARGUMEN SIDANG (ARGUMEN SIDANG HANYA UNTUK PENELITI UTAMA) -->
+      <div id="tab-blueprint" class="staff-tab-pane" hidden>
+        <!-- KARTU INI HANYA MUNCUL PADA PENELITI UTAMA (musyhapmiwa) -->
+        <div class="staff-panel-box researcher-only-el" style="margin-bottom: 18px;" hidden>
+          <h3><i class="fa-solid fa-graduation-cap text-indigo"></i> Panduan Argumen Sidang (Khusus Peneliti Utama): Skema Pre-test &amp; Post-test dalam 1 Pertemuan</h3>
+          <div class="defense-qa-grid">
+            <div class="defense-qa-card">
+              <strong>1. Bagaimana Mengambil Nilai Pre-test &amp; Post-test dalam 1 Pertemuan?</strong>
+              <p>
+                Sistem SYANORA menggunakan metode <em>Embedded Diagnostic Assessment</em>: <strong>Nilai Pre-test (Pra-Bengkel)</strong> direkam otomatis dari akurasi percobaan pertama siswa sebelum mendapat intervensi latihan setipe, sedangkan <strong>Nilai Post-test (Pasca-Bengkel)</strong> direkam dari ketuntasan akhir setelah siswa menjalani remediasi soal setipe dan menyelesaikan tahap transfer pada Studi Kasus.
+              </p>
+            </div>
+            <div class="defense-qa-card">
+              <strong>2. Bagaimana Cara Kerja Sistem Bengkel Fokus Per Kolom Langkah?</strong>
+              <p>
+                Mengadopsi prinsip <em>Step-Level Mastery</em> (VanLehn, 2006), siswa difokuskan menjawab satu kolom langkah per tampilan: Langkah 1 (menentukan <span class="math-eq">a</span> dan <span class="math-eq">n</span>) harus benar dulu melalui bimbingan soal setipe sebelum membuka Langkah 2 (<span class="math-eq">b</span>), Langkah 3 (Rumus <span class="math-eq">U<sub>n</sub> / S<sub>n</sub></span>), dan Langkah 4 (Perhitungan &amp; Simpulan). Saat ke-4 langkah benar, sistem merangkum keempat langkah secara utuh.
+              </p>
+            </div>
+            <div class="defense-qa-card">
+              <strong>3. Bagaimana Menuliskannya di Bab IV Tesis?</strong>
+              <p>
+                Di Bab IV, sajikan: (1) <em>Deskripsi Karakteristik Siswa</em> (L/P, usia, intensitas belajar), (2) <em>Analisis Proses CT &amp; Frekuensi Latihan Setipe</em>, serta (3) <em>Peningkatan Kemampuan Numerasi</em> (perbandingan skor Pra-Bengkel vs Pasca-Bengkel, ketuntasan KKM &ge; 75, dan skor N-Gain).
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="staff-panel-box">
+          <div class="panel-box-top">
+            <div>
+              <h3>Tabel Kisi-Kisi Instrumen &amp; Lokasi Kemunculan Indikator Numerasi pada Sistem SYANORA</h3>
+              <p class="text-muted">Memperlihatkan secara rinci di halaman dan langkah mana setiap indikator numerasi dan pilar CT muncul.</p>
+            </div>
+            <span class="badge-pill badge-emerald"><i class="fa-solid fa-clock"></i> Estimasi Total: 40–50 Menit (1 Pertemuan / 2x45 JP)</span>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clean-table blueprint-detail-table">
+              <thead>
+                <tr>
+                  <th>Kode &amp; Konteks Soal</th>
+                  <th>Level Kognitif</th>
+                  <th>Indikator Kemampuan Numerasi (OECD/PISA)</th>
+                  <th>Letak Kemunculan Eksplisit di SYANORA</th>
+                  <th>Pemetaan 4 Pilar Computational Thinking (CT)</th>
+                </tr>
+              </thead>
+              <tbody id="blueprint-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: REKAP KARAKTERISTIK SISWA, FILTER N-GAIN & BARIS TOTAL -->
+      <div id="tab-scores" class="staff-tab-pane" hidden>
+        <div class="staff-panel-box" style="margin-bottom:18px;">
+          <div class="panel-box-top">
+            <div>
+              <h3>Input &amp; Pengaturan KKM Evaluasi Pre-test (Pra-Bengkel) / Post-test (Pasca-Bengkel)</h3>
+              <p class="text-muted">Nilai Pre-test &amp; Post-test terhitung otomatis dari performa 1 pertemuan di SYANORA, namun tetap dapat disesuaikan di bawah ini.</p>
+            </div>
+            <div class="kkm-setting-box">
+              <label for="kkm-threshold-input">Standar KKM Matematika:</label>
+              <input type="number" id="kkm-threshold-input" min="50" max="100" value="75" />
+            </div>
+          </div>
+
+          <form id="update-student-eval-form" class="eval-form-grid">
+            <div>
+              <label for="eval-student-select">Pilih Siswa</label>
+              <select id="eval-student-select" required></select>
+            </div>
+            <div>
+              <label for="eval-gender">Jenis Kelamin</label>
+              <select id="eval-gender">
+                <option value="Perempuan">Perempuan (P)</option>
+                <option value="Laki-laki">Laki-laki (L)</option>
+              </select>
+            </div>
+            <div>
+              <label for="eval-age">Usia (Thn)</label>
+              <input type="number" id="eval-age" min="10" max="99" value="15" />
+            </div>
+            <div>
+              <label for="eval-intensity">Intensitas Belajar</label>
+              <select id="eval-intensity">
+                <option value="Tinggi (> 4 jam/minggu)">Tinggi (&gt; 4 jam/mgg)</option>
+                <option value="Sedang (2 - 4 jam/minggu)">Sedang (2–4 jam/mgg)</option>
+                <option value="Rendah (< 2 jam/minggu)">Rendah (&lt; 2 jam/mgg)</option>
+              </select>
+            </div>
+            <div>
+              <label for="eval-pretest">Pre-Test (Awal)</label>
+              <input type="number" id="eval-pretest" min="0" max="100" placeholder="0-100" required />
+            </div>
+            <div>
+              <label for="eval-posttest">Post-Test (Akhir)</label>
+              <input type="number" id="eval-posttest" min="0" max="100" placeholder="0-100" required />
+            </div>
+            <div style="display:flex;align-items:flex-end;">
+              <button type="submit" class="btn btn-primary btn-block">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Data
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="staff-panel-box">
+          <div class="panel-box-top">
+            <div>
+              <h3>Tabel Deskripsi Karakteristik Siswa, Skor Proses ITS, Ketuntasan KKM &amp; Skor N-Gain</h3>
+              <p class="text-muted">Gunakan filter di bawah ini untuk mengelompokkan siswa berdasarkan kategori N-Gain (Rendah, Sedang, Tinggi), ketuntasan KKM, atau intensitas belajar.</p>
+            </div>
+          </div>
+
+          <!-- Filter Interaktif Rekap Siswa (N-Gain, KKM, Intensitas, Pencarian) -->
+          <div class="score-filter-bar">
+            <div class="filter-item">
+              <label for="filter-ngain">Filter Kategori N-Gain:</label>
+              <select id="filter-ngain">
+                <option value="ALL">Semua Kategori N-Gain</option>
+                <option value="Tinggi">Tinggi (g &ge; 0.70)</option>
+                <option value="Sedang">Sedang (0.30 &le; g &lt; 0.70)</option>
+                <option value="Rendah">Rendah (g &lt; 0.30)</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filter-kkm">Filter Status KKM:</label>
+              <select id="filter-kkm">
+                <option value="ALL">Semua Status KKM</option>
+                <option value="TUNTAS">Sudah Tuntas (&ge; KKM)</option>
+                <option value="BELUM">Belum Tuntas (&lt; KKM)</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filter-intensity">Filter Intensitas Belajar:</label>
+              <select id="filter-intensity">
+                <option value="ALL">Semua Intensitas</option>
+                <option value="Tinggi">Tinggi (&gt; 4 jam/minggu)</option>
+                <option value="Sedang">Sedang (2 - 4 jam/minggu)</option>
+                <option value="Rendah">Rendah (&lt; 2 jam/minggu)</option>
+              </select>
+            </div>
+            <div class="filter-item">
+              <label for="filter-search-student">Cari Nama / Username:</label>
+              <input type="text" id="filter-search-student" placeholder="Ketik nama siswa..." />
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Username &amp; Nama</th>
+                  <th>L/P &amp; Usia</th>
+                  <th>Intensitas Belajar</th>
+                  <th>Skor Proses ITS</th>
+                  <th>Ayo Berlatih &amp; Penguatan</th>
+                  <th>Nilai Pre-Test</th>
+                  <th>Nilai Post-Test</th>
+                  <th>Skor N-Gain</th>
+                  <th>Status Ketuntasan KKM</th>
+                </tr>
+              </thead>
+              <tbody id="staff-student-tbody"></tbody>
+              <tfoot id="staff-student-tfoot" class="table-summary-foot"></tfoot>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: REKAP DISKUSI & PESAN LANGSUNG -->
+      <div id="tab-discussions" class="staff-tab-pane" hidden>
+        <div class="staff-panel-box" style="margin-bottom:18px;">
+          <div class="panel-box-top">
+            <div>
+              <h3>Rekapitulasi Pesan Langsung (Direct Message) Antar Pengguna</h3>
+              <p class="text-muted">Memuat pesan saran, komentar validasi, dan pertanyaan langsung yang dikirimkan pengguna.</p>
+            </div>
+            <button type="button" id="staff-open-dm-btn" class="btn btn-primary btn-sm">
+              <i class="fa-solid fa-paper-plane"></i> Kirim / Balas Pesan Langsung
+            </button>
+          </div>
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Tanggal &amp; Jam</th>
+                  <th>Pengirim</th>
+                  <th>Penerima</th>
+                  <th>Subjek</th>
+                  <th>Isi Pesan</th>
+                </tr>
+              </thead>
+              <tbody id="staff-dm-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="staff-panel-box">
+          <h3>Rekapitulasi Forum Diskusi &amp; Lampiran Coretan Siswa</h3>
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Tanggal &amp; Jam Diskusi</th>
+                  <th>Username</th>
+                  <th>Nama Lengkap &amp; Peran</th>
+                  <th>Topik Diskusi</th>
+                  <th>Isi Refleksi &amp; Lampiran File</th>
+                </tr>
+              </thead>
+              <tbody id="staff-discussion-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: LOG MASUK/KELUAR, PERANGKAT/OS & IP LOKAL (KHUSUS PENELITI UTAMA: musyhapmiwa) -->
+      <div id="tab-logs" class="staff-tab-pane" hidden>
+        <div class="staff-panel-box">
+          <div class="panel-box-top">
+            <div>
+              <h3>Log Aktivitas Masuk (Login), Keluar (Logout), Perangkat &amp; IP Pengguna</h3>
+              <p class="text-muted">Hanya dapat diakses oleh Peneliti Utama (<strong>musyhapmiwa</strong>). Mencatat waktu masuk, waktu keluar, perangkat/browser, host/IP, dan detail aktivitas.</p>
+            </div>
+            <div class="log-filter-wrap">
+              <label for="log-user-filter">Filter Username:</label>
+              <select id="log-user-filter">
+                <option value="ALL">Semua Username</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Tanggal &amp; Jam</th>
+                  <th>Username &amp; Nama</th>
+                  <th>Peran</th>
+                  <th>Perangkat / OS &amp; IP</th>
+                  <th>Jenis Aktivitas</th>
+                  <th>Detail Interaksi &amp; Hasil</th>
+                </tr>
+              </thead>
+              <tbody id="staff-logs-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: MANAJEMEN AKUN & RAHASIA PIN (KHUSUS PENELITI UTAMA) -->
+      <div id="tab-accounts" class="staff-tab-pane" hidden>
+        <div class="staff-panel-box">
+          <h3>Manajemen &amp; Kredensial Akun Pengguna (Khusus Peneliti Utama)</h3>
+          <div class="researcher-secret-box">
+            <h4><i class="fa-solid fa-key"></i> Keterangan Hak Akses &amp; PIN Sistem SYANORA:</h4>
+            <ul>
+              <li><strong>Akun Peneliti Utama:</strong> <code>musyhapmiwa</code> (PIN: <code>8%8</code>) &rarr; Akses penuh ke seluruh log masuk/keluar pengguna, info perangkat/IP, panduan argumen sidang, dan manajemen database.</li>
+              <li><strong>Akun Guru / Validator / Dosen</strong> menggunakan akhiran <code>11</code> atau nama dosen (PIN: <code>8&amp;8</code>) &rarr; Tampilan analisis CT, flowchart, rubrik, &amp; akses bebas:
+                <div class="lecturer-badges-list">
+                  <code>prof.hapizah</code> / <code>hapizah11</code>
+                  <code>dr.budi</code> / <code>budi11</code>
+                  <code>dr.suprih</code> / <code>suprih11</code>
+                  <code>dr.najua</code> / <code>najua11</code>
+                  <code>prof.yusuf</code> / <code>yusuf11</code>
+                  <code>dr.weni</code> / <code>weni11</code>
+                  <code>dr.somakim</code> / <code>somakim11</code>
+                  <code>dr.chika</code> / <code>chika11</code>
+                  <code>guru11</code>
+                </div>
+              </li>
+              <li><strong>Akun Siswa</strong> menggunakan akhiran <code>12</code> (PIN: <code>888</code>) &rarr; Tampilan ramah &amp; terpandu bertahap per kolom langkah (<code>puja12</code>, <code>miwa12</code>, <code>musyhapmiwa12</code>, <code>mumu12</code>, <code>rahmat12</code>, <code>ocen12</code>).</li>
+            </ul>
+          </div>
+
+          <form id="add-account-form" class="add-account-row" style="margin-top: 14px;">
+            <input type="text" id="new-acc-username" placeholder="Username (misal: andi12 atau dosen11)" required />
+            <input type="text" id="new-acc-name" placeholder="Nama Lengkap" required />
+            <input type="text" id="new-acc-school" value="SMA IT Harapan Mulia Palembang" placeholder="Asal Sekolah / Institusi" required />
+            <button type="submit" class="btn btn-primary">
+              <i class="fa-solid fa-user-plus"></i> Tambah / Update Akun
+            </button>
+          </form>
+
+          <div class="table-responsive" style="margin-top: 14px;">
+            <table class="clean-table">
+              <thead>
+                <tr>
+                  <th>Username</th>
+                  <th>Nama Lengkap</th>
+                  <th>Peran Sistem</th>
+                  <th>PIN Akses</th>
+                  <th>Sekolah / Institusi</th>
+                </tr>
+              </thead>
+              <tbody id="accounts-list-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== 11. FLOATING POP-UP ZETA AI ==================== -->
+  <div id="zeta-widget" class="zeta-mini-widget">
+    <div id="zeta-popup" class="zeta-popup-card" hidden>
+      <div class="zeta-popup-header">
+        <div class="zeta-title-box">
+          <span class="zeta-dot"></span>
+          <div>
+            <strong><i class="fa-solid fa-robot"></i> ZETA AI</strong>
+            <small id="zeta-context-indicator">Zonasi Edukasi Terpadu Aritmetika</small>
+          </div>
+        </div>
+        <div class="zeta-window-controls">
+          <button type="button" id="zeta-dock-btn" class="zeta-ctrl-btn" title="Pindah Posisi Kiri / Kanan">
+            <i class="fa-solid fa-arrows-left-right"></i>
+          </button>
+          <button type="button" id="zeta-size-btn" class="zeta-ctrl-btn" title="Perbesar / Perkecil Ruang Chat">
+            <i class="fa-solid fa-expand"></i>
+          </button>
+          <button type="button" id="close-zeta-btn" class="zeta-ctrl-btn" title="Sembunyikan Chat">
+            <i class="fa-solid fa-minus"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="zeta-chat-body" class="zeta-chat-body"></div>
+
+      <div class="zeta-quick-chips">
+        <button type="button" class="zeta-chip" data-prompt="Bagaimana cara mencari beda (b) pada soal yang sedang kubuka?">Cara cari beda (b)</button>
+        <button type="button" class="zeta-chip" data-prompt="Kapan saya harus memakai rumus Un dan kapan memakai Sn?">Bedanya Un &amp; Sn</button>
+        <button type="button" class="zeta-chip" data-prompt="Berikan petunjuk langkah untuk soal aktif ini">Petunjuk soal ini</button>
+      </div>
+
+      <form id="zeta-chat-form" class="zeta-chat-input-bar">
+        <input type="text" id="zeta-input" placeholder="Ketik pertanyaanmu ke ZETA AI..." required />
+        <button type="submit" class="btn btn-primary btn-sm" aria-label="Kirim">
+          <i class="fa-solid fa-paper-plane"></i>
+        </button>
+      </form>
+    </div>
+
+    <button type="button" id="zeta-fab-btn" class="zeta-fab" title="ZETA AI (Zonasi Edukasi Terpadu Aritmetika)">
+      <i class="fa-solid fa-robot"></i>
+      <span>ZETA AI</span>
+    </button>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
